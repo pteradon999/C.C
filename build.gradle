@@ -1,0 +1,27 @@
+plugins {
+    id 'groovy'
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '4.0.4'
+}
+
+group 'CC2'
+version '1.0'
+mainClassName = 'cc.gen.second.Bot'
+sourceCompatibility = JavaVersion.VERSION_11
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile group: 'net.dv8tion', name: 'JDA', version: '4.0.0_44'
+    compile group: 'com.jagrosh', name: 'jda-utilities', version: '3.0.1'
+    compile group: 'me.duncte123', name: 'botCommons', version: '1.0.45'
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    compile 'io.github.cdimascio:java-dotenv:5.1.1'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.16'
+}
+compileJava.options.encoding = 'UTF-8'

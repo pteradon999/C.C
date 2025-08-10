@@ -1,125 +1,141 @@
 package cc.gen.second;
 
-import me.duncte123.botcommons.BotCommons;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.events.*;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.*;
+import javax.annotation.*;
 import java.sql.*;
 
 public class Listener extends ListenerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Listener.class);
     private final CommandManager manager = new CommandManager();
+
     @Override
-    public void onReady(@Nonnull ReadyEvent event) {
+    public void onReady(@NotNull ReadyEvent event) {
         LOGGER.info("{} is ready", event.getJDA().getSelfUser().getAsTag());
-        try{
-            Connection con= DriverManager.getConnection("jdbc:mysql://localhost/tags?UseSSL = false","root_m","Pteradon99");
-//here sonoo is database name, root is username and password
-            LOGGER.info("Connection achieved");
+       /* try {
+            Connection con = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/tags?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                    "root_m", "Pteradon99");
+            LOGGER.info("Database connection achieved");
             con.close();
-        }catch(Exception e){ System.out.println(e);
-        }
+        } catch (Exception e) {
+            LOGGER.error("Database connection failed", e);
+        } */
     }
 
     @Override
-    public void onGuildMessageReceived(@Nonnull GuildMessageReceivedEvent event) {
-        User user = event.getAuthor();
-
-        if (user.isBot() || event.isWebhookMessage()) {
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        // Skip if bot message, webhook, or not from guild
+        if (event.getAuthor().isBot() || event.isWebhookMessage() || !event.isFromGuild()) {
             return;
         }
-        User User = event.getAuthor();
+
+        User user = event.getAuthor();
         String prefix = config.get("prefix");
-        String tag_prefix = config.get("tag_prefix");
+        String tagPrefix = config.get("tag_prefix");
         String raw = event.getMessage().getContentRaw();
         MessageChannel channel = event.getChannel();
-        Message Msg = event.getMessage();
+        Message msg = event.getMessage();
+
+        // Shutdown command (owner only)
         if (raw.equalsIgnoreCase(prefix + "_shutdown")
                 && user.getId().equals(config.get("owner_id"))) {
-            LOGGER.info("Shutting down");
+            LOGGER.info("Shutdown command received from owner");
+            channel.sendMessage("🔄 Shutting down...").queue();
             event.getJDA().shutdown();
-            BotCommons.shutdown(event.getJDA());
-
             return;
         }
-        if (raw.contains(tag_prefix +" create ")){
-            String dprefix = "C!C create ";
-            String s = Msg.getContentStripped();
-            String noPrefixStr = s.substring(s.indexOf(dprefix) + dprefix.length());
-            String tag_name = noPrefixStr.substring(0, noPrefixStr.indexOf(" "));
-            String tag_text = noPrefixStr.substring(noPrefixStr.indexOf(" "));
-            Createtag(User.getName(),tag_name,tag_text);
-            channel.sendMessage("***Tag created***").queue();
 
-        } else {
-            if (raw.startsWith(tag_prefix)) {
-                String dprefix = "C!C ";
-                String s = Msg.getContentStripped();
-                String noPrefixStr = s.substring(s.indexOf(dprefix) + dprefix.length());// Блок достает из команды тег
-                channel.sendMessage(Readtag(User.getName(), noPrefixStr)).queue();
+        // Tag creation: C!C create <name> <content>
+        if (raw.startsWith(tagPrefix + " create ")) {
+            String createPrefix = tagPrefix + " create ";
+            String content = raw.substring(createPrefix.length());
+
+            int spaceIndex = content.indexOf(" ");
+            if (spaceIndex > 0) {
+                String tagName = content.substring(0, spaceIndex);
+                String tagText = content.substring(spaceIndex + 1);
+
+                createTag(user.getName(), tagName, tagText);
+                channel.sendMessage("✅ **Tag created successfully!**").queue();
+            } else {
+                channel.sendMessage("❌ Usage: `" + tagPrefix + " create <name> <content>`").queue();
             }
+            return;
         }
 
+        // Tag retrieval: C!C <name>
+        if (raw.startsWith(tagPrefix + " ")) {
+            String tagName = raw.substring((tagPrefix + " ").length());
+            String tagContent = readTag(tagName);
+
+            if (!tagContent.equals("succsessfullyfailed")) {
+                channel.sendMessage(tagContent).queue();
+            } else {
+                channel.sendMessage("❌ Tag not found: " + tagName).queue();
+            }
+            return;
+        }
+
+        // Command handling
         if (raw.startsWith(prefix)) {
             try {
                 manager.handle(event);
             } catch (SQLException e) {
-                e.printStackTrace();
+                LOGGER.error("Error handling command", e);
+                channel.sendMessage("❌ Command failed: " + e.getMessage()).queue();
             }
         }
     }
 
-    private String Readtag(String name, String noPrefixStr) {
-        String Rtext = "succsessfullyfailed";
-        try{
+    private String readTag(String tagName) {
+        String result = "succsessfullyfailed";
 
-            Connection con= DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/tags","root_m","Pteradon99");
-//here sonoo is database name, root is username and password
-            // the mysql insert statement
-            ResultSet rs = null;
-            Statement preparedStmt = null;
-            String query = "SELECT tag_text FROM tags.ttags WHERE tag_name="+ "'" + noPrefixStr + "'";
+        try (Connection con = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/tags?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "root_m", "Pteradon99")) {
 
-            // create the mysql insert preparedstatement
-            preparedStmt = con.createStatement();
-            rs = preparedStmt.executeQuery(query);
-            while(rs.next()){
-                Rtext = rs.getString("tag_text");
+            // Use prepared statement to prevent SQL injection
+            String query = "SELECT tag_text FROM ttags WHERE tag_name = ?";
+            try (PreparedStatement stmt = con.prepareStatement(query)) {
+                stmt.setString(1, tagName);
+                ResultSet rs = stmt.executeQuery();
 
+                if (rs.next()) {
+                    result = rs.getString("tag_text");
+                }
             }
-            con.close();
-            return Rtext;
-        }catch(Exception e){ System.out.println(e);}
-        return Rtext;
+        } catch (Exception e) {
+            LOGGER.error("Error reading tag: " + tagName, e);
+        }
+
+        return result;
     }
 
-    private void Createtag(String name, String tag_name, String tag_text) {
-        try{
+    private void createTag(String author, String tagName, String tagText) {
+        try (Connection con = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/tags?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                "root_m", "Pteradon99")) {
 
-            Connection con= DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/tags","root_m","Pteradon99");
-
-            String query = " insert into ttags (tag_author, tag_name, tag_text)"
-                    + " values (?, ?, ?)";
-
-            // create the mysql insert preparedstatement
-            PreparedStatement preparedStmt = con.prepareStatement(query);
-            preparedStmt.setString (1, name);
-            preparedStmt.setString (2, tag_name);
-            preparedStmt.setString (3, tag_text);
-            preparedStmt.execute();
-            con.close();
-        }catch(Exception e){ System.out.println(e);}
+            String query = "INSERT INTO ttags (tag_author, tag_name, tag_text) VALUES (?, ?, ?)";
+            try (PreparedStatement stmt = con.prepareStatement(query)) {
+                stmt.setString(1, author);
+                stmt.setString(2, tagName);
+                stmt.setString(3, tagText);
+                stmt.executeUpdate();
+                LOGGER.info("Created tag '{}' by {}", tagName, author);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error creating tag: " + tagName, e);
+        }
     }
-
-
 }

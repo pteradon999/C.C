@@ -1,42 +1,40 @@
 package cc.gen.second.command.commands;
 
 import cc.gen.second.command.CommandContext;
-import cc.gen.second.command.Icommand;
-import net.dv8tion.jda.api.JDA;
+import cc.gen.second.command.ICommand;
+import cc.gen.second.utils.CounterStore;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 
-import java.sql.*;
-
-public class SlapCommand implements Icommand {
+public class SlapCommand implements ICommand {
     @Override
-    public String handle(CommandContext ctx) throws SQLException {
+    public void handle(CommandContext ctx) {
+        SlashCommandInteractionEvent event = ctx.getSlashEvent();
+        int count = CounterStore.increment("slaps");
+        event.replyFormat(
+                "💥 П-простите меня, я постараюсь быть лучше...\n" +
+                        "Семпаи были недовольны С.С. **%d** раз/a.",
+                count
+        ).queue();
+    }
 
-        try (Connection con = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/tags", "root_m", "Pteradon99")) {
-            // the mysql insert statement
-            ResultSet rs = null;
-            int cnt = 0;
-            Statement preparedStmt = null;
-            String count = "SELECT slaps FROM tags.love";
-            preparedStmt = con.createStatement();
-            rs = preparedStmt.executeQuery(count);
-            while (rs.next()) {
-                cnt = rs.getInt("slaps");
-            }
-            String query = "UPDATE tags.love SET slaps = slaps + 1";
-            PreparedStatement upd = con.prepareStatement(query);
-            upd.execute();
-            JDA jda = ctx.getJDA();
-            int finalCnt = cnt;
-            jda.getRestPing().queue(
-                    (ping) -> ctx.getChannel()
-                            .sendMessageFormat("*П-простите меня, я постараюсь быть лучше...*\n *Семпаи были недовольны С.С. уже " + finalCnt + " раз/a*").queue());
-
-        }
+    @Override
+    public CommandData getCommandData() {
         return null;
     }
+
     @Override
-    public String getName(){
-        return "_slap";
+    public String getName() {
+        return "slap";
     }
 
+    @Override
+    public String getDescription() {
+        return "Slap the bot (increments slap counter)";
+    }
+
+    @Override
+    public String getHelp() {
+        return "";
+    }
 }

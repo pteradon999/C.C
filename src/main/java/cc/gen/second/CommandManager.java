@@ -1,62 +1,107 @@
 package cc.gen.second;
 
 import cc.gen.second.command.CommandContext;
-import cc.gen.second.command.Icommand;
+import cc.gen.second.command.ICommand;
 import cc.gen.second.command.commands.*;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import javax.annotation.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class CommandManager {
-    private final List<Icommand> commands = new ArrayList<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommandManager.class);
+    private final List<ICommand> commands = new ArrayList<>();
 
     public CommandManager() {
-        addCommand(new PingCommand());
-        addCommand(new RateCommand());
+        // Register your original commands
+
         addCommand(new SlapCommand());
         addCommand(new PatCommand());
-        addCommand(new RateAdder());
+        addCommand(new FolderWatchCommand());
+        addCommand(new PingCommand());
         addCommand(new ClearCommand());
+
+        LOGGER.info("Registered {} commands", commands.size());
     }
 
+    private void addCommand(ICommand cmd) {
+        boolean nameFound = this.commands.stream()
+                .anyMatch((it) -> it.getName().equalsIgnoreCase(cmd.getName()));
 
-
-    private void  addCommand(Icommand cmd) {
-        boolean nameFound = this.commands.stream().anyMatch((it) -> it.getName().equalsIgnoreCase(cmd.getName()));
         if (nameFound) {
-            throw new IllegalArgumentException("Command already exist");
-
+            throw new IllegalArgumentException("Command already exists: " + cmd.getName());
         }
+
         commands.add(cmd);
+        LOGGER.debug("Registered command: {}", cmd.getName());
     }
+
     @Nullable
-    private Icommand getCommand(String search){
+    private ICommand getCommand(String search) {
         String searchLower = search.toLowerCase();
-        for (Icommand cmd: this.commands){
+        for (ICommand cmd : this.commands) {
             if (cmd.getName().equals(searchLower) || cmd.getAliases().contains(searchLower)) {
                 return cmd;
             }
         }
-    return null;
+        return null;
     }
-    public void handle(GuildMessageReceivedEvent event) throws SQLException {
-        String[] split = event.getMessage().getContentRaw()
-                .replaceFirst("(?i)"+(config.get("prefix")), "")
+
+    public void handle(MessageReceivedEvent event) throws SQLException {
+        String prefix = config.get("prefix");
+        String content = event.getMessage().getContentRaw();
+
+        // Check if message starts with prefix
+        if (!content.toLowerCase().startsWith(prefix.toLowerCase())) {
+            return;
+        }
+
+        // Remove prefix and split into command and arguments
+        String[] split = content
+                .replaceFirst("(?i)" + prefix, "")
+                .trim()
                 .split("\\s+");
 
-     String invoke = split[0].toLowerCase();
-     Icommand cmd = this.getCommand(invoke);
+        if (split.length == 0 || split[0].isEmpty()) {
+            return;
+        }
 
-     if (cmd != null){
-         event.getChannel().sendTyping().queue();
-         List<String> args = Arrays.asList(split).subList(1,split.length);
+        String invoke = split[0].toLowerCase();
+        ICommand cmd = this.getCommand(invoke);
 
-         CommandContext ctx = new CommandContext(event, args);
-         cmd.handle(ctx);
-     }
+        if (cmd != null) {
+            // Show typing indicator
+            event.getChannel().sendTyping().queue();
+
+            // Create arguments list (everything after command name)
+            List<String> args = split.length > 1
+                    ? Arrays.asList(Arrays.copyOfRange(split, 1, split.length))
+                    : new ArrayList<>();
+
+            // Create context and execute command
+            CommandContext ctx = new CommandContext(event, args);
+
+            try {
+                cmd.handle(ctx);
+                LOGGER.debug("Executed command: {} by {}", cmd.getName(), event.getAuthor().getAsTag());
+            } catch (Exception e) {
+                LOGGER.error("Error executing command: {}", cmd.getName(), e);
+                event.getChannel().sendMessage("❌ Command failed: " + e.getMessage()).queue();
+            }
+        }
+    }
+
+    public List<ICommand> getCommands() {
+        return new ArrayList<>(commands);
+    }
+
+    public int getCommandCount() {
+        return commands.size();
     }
 }

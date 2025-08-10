@@ -1,24 +1,50 @@
 package cc.gen.second.command.commands;
 
 import cc.gen.second.command.CommandContext;
-import cc.gen.second.command.Icommand;
-import net.dv8tion.jda.api.JDA;
+import cc.gen.second.command.ICommand;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
-public class PingCommand implements Icommand {
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
+
+public class PingCommand implements ICommand {
+
     @Override
-    public String handle (CommandContext ctx) {
-        JDA jda = ctx.getJDA();
+    public void handle(CommandContext ctx) throws SQLException { // <-- drop "throws SQLException" if your interface doesn't have it
+        long gatewayPing = ctx.isSlash()
+                ? ctx.getSlashEvent().getJDA().getGatewayPing()
+                : ctx.getMessageEvent().getJDA().getGatewayPing();
 
-        jda.getRestPing().queue(
-                (ping) -> ctx.getChannel()
-                .sendMessageFormat("Reset ping %sms\nWS ping %sms",ping,jda.getGatewayPing()).queue()
-        );
-        return null;
+        String reply = "Pong! `" + gatewayPing + " ms`";
+
+        if (ctx.isSlash()) {
+            ctx.getSlashEvent().reply(reply).queue();
+        } else {
+            ctx.getChannel().sendMessage(reply).queue();
+        }
     }
 
     @Override
-    public String getName(){
-        return "_ping";
+    public String getName() {
+        // IMPORTANT: no prefix here — CommandManager strips the prefix already
+        return "ping";
     }
 
+    @Override
+    public List<String> getAliases() {
+        return Collections.singletonList("pong");
+    }
+
+    @Override
+    public String getHelp() {
+        return "Checks bot latency. Usage: `"+ /* your prefix here if you print it */ "ping`";
+    }
+
+    @Override
+    public CommandData getCommandData() {
+        // Optional: enables /ping as a slash command if you register it elsewhere
+        return Commands.slash("ping", "Checks bot latency");
+    }
 }

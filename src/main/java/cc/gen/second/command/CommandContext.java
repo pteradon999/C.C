@@ -1,31 +1,54 @@
 package cc.gen.second.command;
 
-import me.duncte123.botcommons.commands.ICommandContext;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.util.List;
 
-public class CommandContext implements ICommandContext {
-    private final GuildMessageReceivedEvent event;
+public class CommandContext {
+    private final MessageReceivedEvent messageEvent;
+    private final SlashCommandInteractionEvent slashEvent;
     private final List<String> args;
 
-    public CommandContext(GuildMessageReceivedEvent event, List<String> args) {
-        this.event = event;
+    // For prefix commands
+    public CommandContext(MessageReceivedEvent messageEvent, List<String> args) {
+        this.messageEvent = messageEvent;
+        this.slashEvent = null;
         this.args = args;
     }
 
-    @Override
-    public Guild getGuild() {
-        return this.getEvent().getGuild();
+    // For slash commands
+    public CommandContext(SlashCommandInteractionEvent slashEvent) {
+        this.messageEvent = null;
+        this.slashEvent = slashEvent;
+        this.args = null;
     }
 
-    @Override
-    public GuildMessageReceivedEvent getEvent() {
-        return this.event;
+    public boolean isSlash() {
+        return slashEvent != null;
+    }
+
+    public MessageReceivedEvent getMessageEvent() {
+        return messageEvent;
+    }
+
+    public SlashCommandInteractionEvent getSlashEvent() {
+        return slashEvent;
     }
 
     public List<String> getArgs() {
-        return this.args;
+        return args;
+    }
+
+    /** Author of the message / interaction */
+    public User getAuthor() {
+        return isSlash() ? slashEvent.getUser() : messageEvent.getAuthor();
+    }
+
+    /** Channel the message / interaction came from */
+    public MessageChannelUnion getChannel() {
+        return isSlash() ? slashEvent.getChannel() : messageEvent.getChannel();
     }
 }

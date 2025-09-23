@@ -26,6 +26,9 @@ public class CommandManager {
         addCommand(new FolderWatchCommand());
         addCommand(new PingCommand());
         addCommand(new ClearCommand());
+        addCommand(new FormatTagsCommand());
+        addCommand(new CgachaPrefixCommand());
+        addCommand(new WaifuGachaPrefixCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

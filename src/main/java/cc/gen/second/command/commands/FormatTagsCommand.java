@@ -14,6 +14,10 @@ public class FormatTagsCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
+        if (!ctx.isSlash()) {
+            ctx.getChannel().sendMessage("This command is slash-only. Use `/formattags` instead.").queue();
+            return;
+        }
         SlashCommandInteractionEvent event = ctx.getSlashEvent();
         String inputText = event.getOption("text").getAsString();
 

@@ -43,6 +43,38 @@ public class WaifuGachaPrefixCommand implements ICommand {
             10.0,  10.0,  10.0,  10.0, 10.0
     };
 
+    // characters.json loaded once at startup
+    private static final List<Waifu> WAIFU_CACHE;
+
+    static {
+        List<Waifu> loaded = Collections.emptyList();
+        try {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) cl = WaifuGachaPrefixCommand.class.getClassLoader();
+            URL u = cl.getResource("characters.json");
+            if (u != null) {
+                try (InputStream in = u.openStream()) {
+                    loaded = parseWaifusStatic(in);
+                }
+            } else {
+                File f = new File("./characters.json");
+                if (f.exists()) {
+                    try (FileInputStream fis = new FileInputStream(f)) {
+                        loaded = parseWaifusStatic(fis);
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        WAIFU_CACHE = Collections.unmodifiableList(loaded);
+    }
+
+    private static List<Waifu> parseWaifusStatic(InputStream in) throws IOException {
+        List<Waifu> out = new ArrayList<>();
+        JsonNode root = MAPPER.readTree(in);
+        if (root.isArray()) for (JsonNode n : root) out.add(new Waifu(n));
+        return out;
+    }
+
     private static class Waifu {
         final int id;
         final String name;
@@ -100,7 +132,7 @@ public class WaifuGachaPrefixCommand implements ICommand {
             return;
         }
 
-        List<Waifu> all = loadWaifus();
+        List<Waifu> all = WAIFU_CACHE;
         if (all.isEmpty()) {
             channel.sendMessage("❌ Error loading `characters.json`").queue();
             return;

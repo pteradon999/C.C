@@ -35,6 +35,15 @@ public class CounterStore {
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize counter store", e);
         }
+
+        // Persist counters on JVM shutdown instead of on every increment
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                save();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, "CounterStore-Shutdown"));
     }
 
     /** Persist the current JSON to disk */
@@ -56,12 +65,6 @@ public class CounterStore {
     public static synchronized int increment(String key) {
         int val = root.optInt(key, 0) + 1;
         root.put(key, val);
-        try {
-            save();
-        } catch (IOException e) {
-            // Log and ignore
-            e.printStackTrace();
-        }
         return val;
     }
 }

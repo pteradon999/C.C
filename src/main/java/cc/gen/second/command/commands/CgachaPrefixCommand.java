@@ -31,6 +31,19 @@ public class CgachaPrefixCommand implements ICommand {
             5.0, 12.6, 14.0, 17.0, 19.0, 17.0, 11.0, 3.0, 1.0, 0.4
     };
 
+    // Gacha data loaded once at startup, keyed by category
+    private static final Map<Category, List<GachaEntry>> CACHE = new EnumMap<>(Category.class);
+
+    static {
+        for (Category c : new Category[]{Category.ABILITY, Category.FAMILIAR, Category.ITEM, Category.SKILL, Category.TRAIT}) {
+            try {
+                CACHE.put(c, loadEntriesFor(c));
+            } catch (IOException e) {
+                CACHE.put(c, Collections.emptyList());
+            }
+        }
+    }
+
     private enum Category {
         ABILITY("ability"),
         FAMILIAR("familiar"),
@@ -120,21 +133,16 @@ public class CgachaPrefixCommand implements ICommand {
             return;
         }
 
-        // Load pools once
+        // Build per-request pools from cache (filter in-memory if rarity range specified)
         Map<Category, List<GachaEntry>> data = new EnumMap<>(Category.class);
         for (Category c : new Category[]{Category.ABILITY, Category.FAMILIAR, Category.ITEM, Category.SKILL, Category.TRAIT}) {
-            try {
-                List<GachaEntry> entries = loadEntriesFor(c);
-                // Filter by rarity range if specified
-                if (input.rarityRange != null) {
-                    entries = entries.stream()
-                            .filter(e -> input.rarityRange.contains(e.threshold))
-                            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
-                }
-                data.put(c, entries);
-            } catch (IOException e) {
-                data.put(c, Collections.emptyList());
+            List<GachaEntry> entries = new ArrayList<>(CACHE.getOrDefault(c, Collections.emptyList()));
+            if (input.rarityRange != null) {
+                entries = entries.stream()
+                        .filter(e -> input.rarityRange.contains(e.threshold))
+                        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
             }
+            data.put(c, entries);
         }
 
         StringBuilder sb = new StringBuilder();

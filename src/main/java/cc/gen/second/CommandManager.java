@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.*;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +25,9 @@ public class CommandManager {
         addCommand(new FolderWatchCommand());
         addCommand(new PingCommand());
         addCommand(new ClearCommand());
+        addCommand(new FormatTagsCommand());
+        addCommand(new CgachaPrefixCommand());
+        addCommand(new WaifuGachaPrefixCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }
@@ -53,7 +55,7 @@ public class CommandManager {
         return null;
     }
 
-    public void handle(MessageReceivedEvent event) throws SQLException {
+    public void handle(MessageReceivedEvent event) {
         String prefix = config.get("prefix");
         String content = event.getMessage().getContentRaw();
 

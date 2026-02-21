@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -21,6 +20,7 @@ public class FolderWatchCommand implements ICommand {
     private static final String PNG = ".png";
     private static final String MP4 = ".mp4";
     private static final String OWNER_ID = "253963350944251915";
+    private static final long MAX_FILE_SIZE = 25L * 1024 * 1024; // 25 MB Discord limit
 
     private static final String PNG_FOLDER = System.getenv("IMAGE_FOLDER_PATH") != null
             ? System.getenv("IMAGE_FOLDER_PATH")
@@ -30,7 +30,7 @@ public class FolderWatchCommand implements ICommand {
             : "D:\\SD_Main\\ComfyVideo\\ComfyUI_windows_portable\\ComfyUI\\output";
 
     @Override
-    public void handle(@NotNull CommandContext ctx) throws SQLException {
+    public void handle(@NotNull CommandContext ctx) {
         // owner check (compare ID strings)
         if (!ctx.getAuthor().getId().equals(OWNER_ID)) {
             ctx.getChannel().sendMessage("You are not authorized to activate this command.").queue();
@@ -47,7 +47,7 @@ public class FolderWatchCommand implements ICommand {
                 t.setDaemon(true);
                 return t;
             });
-            watcher.scheduleAtFixedRate(this::monitorFolders, 0, 1, TimeUnit.MINUTES);
+            watcher.scheduleWithFixedDelay(this::monitorFolders, 0, 1, TimeUnit.MINUTES);
         }
     }
 
@@ -84,6 +84,15 @@ public class FolderWatchCommand implements ICommand {
             if (latest.getName().equals(last)) return;
 
             lastProcessed.put(key, latest.getName());
+
+            if (latest.length() > MAX_FILE_SIZE) {
+                long sizeMb = latest.length() / (1024 * 1024);
+                for (TextChannel ch : activeChannels) {
+                    ch.sendMessage("⚠️ New file detected but too large to upload: `"
+                            + latest.getName() + "` (" + sizeMb + " MB, limit is 25 MB)").queue();
+                }
+                return;
+            }
 
             // FileUpload is single-use: create a new one per send
             for (TextChannel ch : activeChannels) {

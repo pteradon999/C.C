@@ -2,7 +2,6 @@ package cc.gen.second.command;
 
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -13,9 +12,8 @@ public interface ICommand {
     /**
      * Handle command execution
      * @param ctx The command context
-     * @throws SQLException if database error occurs
      */
-    void handle(CommandContext ctx) throws SQLException;
+    void handle(CommandContext ctx);
 
     CommandData getCommandData();
 

@@ -1,0 +1,742 @@
+{
+  "3": {
+    "inputs": {
+      "seed": ["22", 3],
+      "steps": ["1424", 0],
+      "cfg": 6.5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["10", 0],
+      "positive": ["26", 0],
+      "negative": ["27", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {"title": "KSampler"}
+  },
+  "4": {
+    "inputs": {"ckpt_name": "ComfyUI_00001_.safetensors"},
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {"title": "Load Checkpoint"}
+  },
+  "5": {
+    "inputs": {"width": ["1108", 0], "height": ["1108", 1], "batch_size": 1},
+    "class_type": "EmptyLatentImage",
+    "_meta": {"title": "Empty Latent Image"}
+  },
+  "6": {
+    "inputs": {"text": ["797", 0], "clip": ["10", 1]},
+    "class_type": "CLIPTextEncode",
+    "_meta": {"title": "CLIP Text Encode (Prompt)"}
+  },
+  "7": {
+    "inputs": {
+      "text": "worst quality, off-topic, comic, jpeg artifacts,  worst aesthetic, scan artifacts, signature, watermark, artist name, username, copyright name, logo, text, speech bubble, narration, lineart, production art, retro artstyle, off-topic, worst quality, oldest, patreon username, bad proportions, deformed, censored, pov, censored, bar censor, mosaic censoring, pointless censoring, multiple views, multiple angles, embedding:NEGATIVE_HANDS, embedding:AissistXLv2-neg, (censored, bar censor:1.2, mosaic censoring, pointless censoring, light censor, heart censor, censored text), multiple_views, "
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {"title": "CLIP Text Encode (Prompt)"}
+  },
+  "10": {
+    "inputs": {
+      "lora_name": "SDXL\\aidmaImageUpgrader-v0.3-IL.safetensors",
+      "strength_model": 0,
+      "strength_clip": 0,
+      "model": ["1306", 0],
+      "clip": ["1306", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "11": {
+    "inputs": {"upscale_method": "nearest-exact", "scale_by": 1.5, "samples": ["3", 0]},
+    "class_type": "LatentUpscaleBy",
+    "_meta": {"title": "Множитель Апскейла"}
+  },
+  "12": {
+    "inputs": {
+      "seed": ["22", 3],
+      "steps": 20,
+      "cfg": 7,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 0.4,
+      "model": ["1343", 0],
+      "positive": ["37", 0],
+      "negative": ["37", 1],
+      "latent_image": ["11", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {"title": "KSampler"}
+  },
+  "13": {
+    "inputs": {"samples": ["12", 0]},
+    "class_type": "VAEDecode",
+    "_meta": {"title": "VAE Decode"}
+  },
+  "14": {
+    "inputs": {
+      "guide_size": 768,
+      "guide_size_for": true,
+      "max_size": 1560,
+      "seed": ["22", 3],
+      "steps": ["24", 0],
+      "cfg": 6,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 0.35000000000000003,
+      "feather": 5,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "bbox_threshold": 0.5,
+      "bbox_dilation": 10,
+      "bbox_crop_factor": 3,
+      "sam_detection_hint": "center-1",
+      "sam_dilation": 0,
+      "sam_threshold": 0.93,
+      "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7000000000000001,
+      "sam_mask_hint_use_negative": "False",
+      "drop_size": 10,
+      "wildcard": "",
+      "cycle": 1,
+      "inpaint_model": false,
+      "noise_mask_feather": 20,
+      "tiled_encode": false,
+      "tiled_decode": false,
+      "image": ["13", 0],
+      "model": ["10", 0],
+      "clip": ["10", 1],
+      "vae": ["4", 2],
+      "positive": ["26", 0],
+      "negative": ["27", 0],
+      "bbox_detector": ["21", 0]
+    },
+    "class_type": "FaceDetailer",
+    "_meta": {"title": "FaceDetailer"}
+  },
+  "21": {
+    "inputs": {"model_name": "bbox/face_yolov8s.pt"},
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {"title": "UltralyticsDetectorProvider"}
+  },
+  "22": {
+    "inputs": {"seed": 63491979886753},
+    "class_type": "Seed",
+    "_meta": {"title": "Seed"}
+  },
+  "24": {
+    "inputs": {"Number": "20"},
+    "class_type": "Int",
+    "_meta": {"title": "Int"}
+  },
+  "25": {
+    "inputs": {"sampling": "eps", "zsnr": false, "model": ["4", 0]},
+    "class_type": "ModelSamplingDiscrete",
+    "_meta": {"title": "ModelSamplingDiscrete"}
+  },
+  "26": {
+    "inputs": {
+      "width": 4096, "height": 4096, "crop_w": 0, "crop_h": 0,
+      "target_width": 4096, "target_height": 4096,
+      "conditioning": ["6", 0]
+    },
+    "class_type": "BNK_AddCLIPSDXLParams",
+    "_meta": {"title": "Add CLIP SDXL Params"}
+  },
+  "27": {
+    "inputs": {
+      "width": 4096, "height": 4096, "crop_w": 0, "crop_h": 0,
+      "target_width": 4096, "target_height": 4096,
+      "conditioning": ["7", 0]
+    },
+    "class_type": "BNK_AddCLIPSDXLParams",
+    "_meta": {"title": "Add CLIP SDXL Params"}
+  },
+  "34": {
+    "inputs": {"resolution": 2048, "image": ["35", 0]},
+    "class_type": "AnimeLineArtPreprocessor",
+    "_meta": {"title": "Anime Lineart"}
+  },
+  "35": {
+    "inputs": {"samples": ["3", 0], "vae": ["4", 2]},
+    "class_type": "VAEDecode",
+    "_meta": {"title": "VAE Decode"}
+  },
+  "36": {
+    "inputs": {"control_net_name": "noob-sdxl-controlnet-lineart_anime.safetensors"},
+    "class_type": "ControlNetLoader",
+    "_meta": {"title": "Load ControlNet Model"}
+  },
+  "37": {
+    "inputs": {
+      "strength": 0.6, "start_percent": 0, "end_percent": 1,
+      "positive": ["26", 0], "negative": ["27", 0],
+      "control_net": ["36", 0], "image": ["34", 0], "vae": ["4", 2]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {"title": "Apply ControlNet"}
+  },
+  "38": {
+    "inputs": {"images": ["34", 0]},
+    "class_type": "PreviewImage",
+    "_meta": {"title": "Preview Image"}
+  },
+  "41": {
+    "inputs": {"lora_name": "SDXL\\cutesexyrobutts_style_pdxl_v3.safetensors"},
+    "class_type": "SDLoraSelector",
+    "_meta": {"title": "SD Lora Selector"}
+  },
+  "50": {
+    "inputs": {"stop_at_clip_layer": -2, "clip": ["4", 1]},
+    "class_type": "CLIPSetLastLayer",
+    "_meta": {"title": "CLIP Set Last Layer"}
+  },
+  "774": {
+    "inputs": {"text": "PLACEHOLDER_CHARACTERS"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Built-in Characters"}
+  },
+  "775": {
+    "inputs": {"seed": 1071251513118564, "text": ["774", 0]},
+    "class_type": "Text Random Line",
+    "_meta": {"title": "Text Random Line"}
+  },
+  "777": {
+    "inputs": {
+      "category": "Angle of View",
+      "preset": "#PRESET",
+      "text": "(masterpiece, best quality, very aesthetic, absurdres, highers, high definition, amazing quality, ultra detailed, very awa),black outline, sharp res"
+    },
+    "class_type": "PromptBuilder //Inspire",
+    "_meta": {"title": "Quality Tags"}
+  },
+  "778": {
+    "inputs": {"Input": 2, "text1": ["775", 0], "text2": ["779", 0]},
+    "class_type": "CR Text Input Switch",
+    "_meta": {"title": "1 - Random Char, 2 - Normal"}
+  },
+  "779": {
+    "inputs": {"text": ""},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Character"}
+  },
+  "785": {
+    "inputs": {
+      "Input": 3,
+      "text1": ["793", 0], "text2": ["786", 0],
+      "text3": ["843", 0], "text4": ["794", 0]
+    },
+    "class_type": "CR Text Input Switch (4 way)",
+    "_meta": {"title": "1 Normal, 2 Combo, 3 Booru Prompter, 4 Combo+Auto"}
+  },
+  "786": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["777", 0], "text_b": ["778", 0], "text_c": ["1044", 0],
+      "text_d": "",
+      "text_e": "Ғ(wagashi \\(dagashiya\\):0.5),(mania \\(fd6060 60\\):0.5),(nishii \\(damnedrive\\):0.8),(chanil \\(muexlku\\):0.6),(remsrar:0.7),(nishiii26miii:0.8)",
+      "text_f": "mature female, solo, standing, full body, (oiled skin:0.5), summer, ocean, sunglasses, sunhat, bikini, (wet:0.5), spoken heart, (bent over:0.5), looking at viewer, blue sky, cloudy sky, palm tree, detailed background, ",
+      "text_g": ["1288", 0], "text_h": ["1283", 0],
+      "text_i": ["1281", 0], "text_j": ["1282", 0],
+      "text_k": ["1284", 0], "text_l": "", "text_m": "",
+      "text_n": "", "text_o": "", "text_p": "", "text_q": "", "text_r": ""
+    },
+    "class_type": "StringFunction",
+    "_meta": {"title": "Сборщик мусора 2"}
+  },
+  "788": {
+    "inputs": {
+      "text_0": "",
+      "text": ["785", 0]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {"title": "Итоговый промт"}
+  },
+  "793": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["777", 0], "text_b": ["778", 0], "text_c": ["1044", 0],
+      "text_d": "Ғ(wagashi \\(dagashiya\\):0.5),(mania \\(fd6060 60\\):0.5),(nishii \\(damnedrive\\):0.8),(chanil \\(muexlku\\):0.6),(remsrar:0.7),(nishiii26miii:0.8)",
+      "text_e": "standing, ",
+      "text_f": "", "text_g": "", "text_h": "", "text_i": "",
+      "text_j": "", "text_k": "", "text_l": "", "text_m": "",
+      "text_n": "", "text_o": "", "text_p": "", "text_q": "", "text_r": ""
+    },
+    "class_type": "StringFunction",
+    "_meta": {"title": "Сборщик мусора"}
+  },
+  "794": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["777", 0], "text_b": ["778", 0], "text_c": ["1044", 0],
+      "text_d": "ГЕНЕРАЛКА",
+      "text_e": ["1076", 0],
+      "text_f": "Ғ(wagashi \\(dagashiya\\):0.5),(mania \\(fd6060 60\\):0.5),(nishii \\(damnedrive\\):0.8),(chanil \\(muexlku\\):0.6),(remsrar:0.7),(nishiii26miii:0.8)",
+      "text_g": ["1288", 0], "text_h": ["1283", 0],
+      "text_i": ["1281", 0], "text_j": ["1282", 0],
+      "text_k": ["1284", 0], "text_l": "", "text_m": "",
+      "text_n": "", "text_o": "", "text_p": "", "text_q": "", "text_r": ""
+    },
+    "class_type": "StringFunction",
+    "_meta": {"title": "Сборщик мусора 4"}
+  },
+  "797": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["788", 0], "text_b": "", "text_c": ""
+    },
+    "class_type": "StringFunction|pysssss",
+    "_meta": {"title": "Hide tag for promt"}
+  },
+  "830": {
+    "inputs": {"output": "", "source": ["797", 0]},
+    "class_type": "Display Any (rgthree)",
+    "_meta": {"title": "Итог промпт"}
+  },
+  "842": {
+    "inputs": {
+      "site": "Gelbooru",
+      "OR_tags": "",
+      "AND_tags": "rwby, solo",
+      "exclude_tag": "1boy, 2boys",
+      "note_area": "",
+      "Safe": true, "Questionable": true, "Explicit": true,
+      "score": 0,
+      "user_id": "",
+      "api_key": "",
+      "seed": 688965246323545,
+      "count": 1
+    },
+    "class_type": "Gelbooru (Random)",
+    "_meta": {"title": "Gelbooru (Random)"}
+  },
+  "843": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["777", 0], "text_b": ["778", 0], "text_c": ["1044", 0],
+      "text_d": ["1076", 0],
+      "text_e": "ГЕНЕРАЛКА",
+      "text_f": "Ғ(wagashi \\(dagashiya\\):0.5),(mania \\(fd6060 60\\):0.5),(nishii \\(damnedrive\\):0.8),(chanil \\(muexlku\\):0.6),(remsrar:0.7),(nishiii26miii:0.8)",
+      "text_g": "", "text_h": "", "text_i": "", "text_j": "",
+      "text_k": "", "text_l": "", "text_m": "", "text_n": "",
+      "text_o": "", "text_p": "", "text_q": "", "text_r": ""
+    },
+    "class_type": "StringFunction",
+    "_meta": {"title": "Сборщик мусора 3"}
+  },
+  "1044": {
+    "inputs": {"Input": 1, "text1": ["1079", 0], "text2": ["1078", 0]},
+    "class_type": "CR Text Input Switch",
+    "_meta": {"title": "1 - Rindex, 2 - Desuka"}
+  },
+  "1071": {
+    "inputs": {"prompt": ["1345", 0], "separator": ",", "remove_tags": ["1082", 0]},
+    "class_type": "PromptRemove",
+    "_meta": {"title": "Artist remove"}
+  },
+  "1076": {
+    "inputs": {"prompt": ["1071", 0], "separator": ",", "remove_tags": ["1080", 0]},
+    "class_type": "PromptRemove",
+    "_meta": {"title": "Censor remove"}
+  },
+  "1078": {
+    "inputs": {"text": "artist:dishwasher1910:0.3\nartist:zucchini:0.1\nartist:1=2:0.4\n(artist:personal_ami)\nArtist:elleciel.eud\nartist:momisan\n\nartist:ao_banana\n"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Desuka Style"}
+  },
+  "1079": {
+    "inputs": {"text": "(P4R4ST31L in the style of cksc, \nkizirugai), fugtrup-style, pija"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Rindex Style"}
+  },
+  "1080": {
+    "inputs": {"text": "artist_logo, logo, censored_nipples, censored, bar_censor, mosaic_censoring, pointless_censoring, bar_censor, web_address, fanbox_username, username, fanbox_logo, fanbox_sample, patreon_username, patreon_logo, pixiv_username, pixiv_logo, pixiv_id, censored_text, monochrome, heart_censor, greyscale, light_censor, artist_name, bad_id, bad_pixiv_id, signature, twitter_username, boosty_username, artist_logo, watermark,hood"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Censor tag"}
+  },
+  "1082": {
+    "inputs": {"file_path": "D:\\SD_Main\\artist1.txt", "dictionary_name": "artist1.txt"},
+    "class_type": "Load Text File",
+    "_meta": {"title": "Load Text File"}
+  },
+  "1085": {
+    "inputs": {"images": ["35", 0]},
+    "class_type": "PreviewImage",
+    "_meta": {"title": "Preview Image"}
+  },
+  "1086": {
+    "inputs": {"images": ["13", 0]},
+    "class_type": "PreviewImage",
+    "_meta": {"title": "Preview Image"}
+  },
+  "1091": {
+    "inputs": {
+      "model_name": "4x_fatal_Anime_500000_G.pth",
+      "rescale_after_model": true,
+      "rescale_method": "nearest-exact",
+      "rescale": "by percentage",
+      "percent": 25,
+      "width": 1024, "height": 1024,
+      "longer_side": 1024, "crop": "disabled",
+      "image_output": "Hide", "link_id": 0,
+      "save_prefix": "ComfyUI",
+      "image": ["14", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "easy hiresFix",
+    "_meta": {"title": "HiresFix"}
+  },
+  "1099": {
+    "inputs": {"model_name": "bbox/hand_yolov8s.pt"},
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {"title": "UltralyticsDetectorProvider"}
+  },
+  "1108": {
+    "inputs": {"resolution": "landscape - 1344x768 (16:9)"},
+    "class_type": "SDXL Resolutions (JPS)",
+    "_meta": {"title": "SDXL Resolutions (JPS)"}
+  },
+  "1111": {
+    "inputs": {"model_name": "sam_vit_b_01ec64.pth", "device_mode": "AUTO"},
+    "class_type": "SAMLoader",
+    "_meta": {"title": "SAMLoader (Impact)"}
+  },
+  "1116": {
+    "inputs": {
+      "filename": "Final_Img__",
+      "path": "E:\\SD_output",
+      "model_name": "noobaiXLNAIXL_epsilonPred11Version.safetensors",
+      "vae_name": "sdxl_vae.safetensors",
+      "seed": ["22", 3],
+      "steps": 35, "cfg": 0,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "width": ["1108", 0], "height": ["1108", 1],
+      "positive": ["788", 0],
+      "negative": ["1120", 0],
+      "extension": "png",
+      "calculate_hash": false,
+      "resource_hash": true,
+      "lossless_webp": true,
+      "jpg_webp_quality": 100,
+      "date_format": "%Y-%m-%d",
+      "time_format": "%H%M%S",
+      "save_metadata_file": false,
+      "extra_info": ["1119", 0],
+      "images": ["1117", 0],
+      "lora_name": ["41", 1]
+    },
+    "class_type": "SDPromptSaver",
+    "_meta": {"title": "SD Prompt Saver"}
+  },
+  "1117": {
+    "inputs": {
+      "text": "", "align": "top right", "opacity": 0.55,
+      "font_name": "YoungSerif-Regular.ttf", "font_size": 40,
+      "font_color": "white", "x_margin": 194, "y_margin": 20,
+      "font_color_hex": "#000000",
+      "image": ["1118", 0]
+    },
+    "class_type": "CR Simple Text Watermark",
+    "_meta": {"title": "CR Simple Text Watermark"}
+  },
+  "1118": {
+    "inputs": {
+      "text": "pteradon", "align": "top right", "opacity": 0.55,
+      "font_name": "YoungSerif-Regular.ttf", "font_size": 11,
+      "font_color": "white", "x_margin": 20, "y_margin": 20,
+      "font_color_hex": "#000000",
+      "image": ["1091", 1]
+    },
+    "class_type": "CR Simple Text Watermark",
+    "_meta": {"title": "CR Simple Text Watermark"}
+  },
+  "1119": {
+    "inputs": {"text": "Create by DesukaONE\n\n✨ Telegram - https:\n📡 Discord - https:\n🚾 Civitai - https:"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Extra Info"}
+  },
+  "1120": {
+    "inputs": {"text": "worst quality, off-topic, comic, jpeg artifacts, worst aesthetic, scan artifacts, ((signature, watermark, artist name, username, copyright name, logo, text,)) speech bubble, narration, lineart, production art, retro artstyle, off-topic, worst quality, oldest, patreon username, bad proportions, deformed, censored, pov, embedding:NEGATIVE_HANDS, embedding:AissistXLv2-neg, (censored, bar censor:1.2, mosaic censoring, pointless censoring, light censor, heart censor, censored text), multiple_views, (tiara)"},
+    "class_type": "Text Multiline",
+    "_meta": {"title": "Negative Prompt"}
+  },
+  "1281": {
+    "inputs": {
+      "text": "{embarrassment|happy|smile|lewd|smug|half closed eyes|ahegao, mind break, moral degeneration|heart in eyes|shocked expression|Empty eyes, no emotions|perplexed|blushing, shy|blush, flustered, looking to the side, pout, half-closed eyes},",
+      "seed": 1963, "autorefresh": "Yes"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Эмоции"}
+  },
+  "1282": {
+    "inputs": {
+      "text": "{completely nude|torn clothing, clothes ripped, exposed skin, areolae slip|partially naked|(pulling up top clothes)|(pulling down bottom clothes)|no panties, cowboy shot|panty pull, panty drop, pussy|full clothes|undressing, opening clothes, areolae slip|huge labia, labia slit, puffy labia, nipple outline, cameltoe, detailed cameltoe, puffy cameltoe},",
+      "seed": 1112, "autorefresh": "No"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Одежда"}
+  },
+  "1283": {
+    "inputs": {
+      "text": "{from behind|from above|from below|side view},",
+      "seed": 425, "autorefresh": "No"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Откуда"}
+  },
+  "1284": {
+    "inputs": {
+      "text": "PLACEHOLDER_POSES_NSFW",
+      "seed": 916, "autorefresh": "Yes"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Позы NSFW"}
+  },
+  "1285": {
+    "inputs": {
+      "text": "PLACEHOLDER_POSES_ALL",
+      "seed": 688, "autorefresh": "Yes"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Позы ВСЕ"}
+  },
+  "1286": {
+    "inputs": {
+      "text": "PLACEHOLDER_BESTIALITY",
+      "seed": 772, "autorefresh": "Yes"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Только Bestiality"}
+  },
+  "1287": {
+    "inputs": {
+      "text": "{mature female, sagging breast, large breasts, curvy body|loli, petite|futanari, big cock, sagging breast, curvy body|tiny, slender body, yong girl|female_child, flat chest|giant tits, MILF:1.3|giant tits, MILF:1.3, futa, big cock|(child:1.3, sexy child body)|(female_child:1.3, loli:1.3)|(mature female:1.3), large breasts, large areolae, wide hips, thick thighs|(mature female:1.3), huge breasts, large areolae|loli, female_child, sexy child body},",
+      "seed": 1773, "autorefresh": "Yes"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Кто"}
+  },
+  "1288": {
+    "inputs": {
+      "text": "{outdoors|indoors},",
+      "seed": 524, "autorefresh": "No"
+    },
+    "class_type": "DPRandomGenerator",
+    "_meta": {"title": "Где"}
+  },
+  "1300": {
+    "inputs": {
+      "site": "Gelbooru",
+      "OR_tags": "",
+      "AND_tags": "bishoujo_senshi_sailor_moon, solo",
+      "exclude_tag": "3d, furry,1boy, 2boys",
+      "note_area": "",
+      "Safe": true, "Questionable": true, "Explicit": true,
+      "score": 0,
+      "user_id": "",
+      "api_key": "",
+      "seed": 651802141475137,
+      "count": 1
+    },
+    "class_type": "Gelbooru (Random)",
+    "_meta": {"title": "Rule34 Random"}
+  },
+  "1305": {
+    "inputs": {
+      "switch_1": "Off", "lora_name_1": "SDXL\\RWBY\\GrimmGirls2.safetensors",
+      "model_weight_1": 1, "clip_weight_1": 1,
+      "switch_2": "Off", "lora_name_2": "SDXL\\Akramness.safetensors",
+      "model_weight_2": 0.75, "clip_weight_2": 0.75,
+      "switch_3": "Off", "lora_name_3": "SDXL\\KuonNoob.safetensors",
+      "model_weight_3": 0.5, "clip_weight_3": 0.5,
+      "lora_stack": ["1307", 0]
+    },
+    "class_type": "CR LoRA Stack",
+    "_meta": {"title": "CR LoRA Stack"}
+  },
+  "1306": {
+    "inputs": {
+      "model": ["1416", 0], "clip": ["1416", 1],
+      "lora_stack": ["1305", 0]
+    },
+    "class_type": "CR Apply LoRA Stack",
+    "_meta": {"title": "CR Apply LoRA Stack"}
+  },
+  "1307": {
+    "inputs": {
+      "switch_1": "Off", "lora_name_1": "SDXL\\Larger_Female.safetensors",
+      "model_weight_1": 0.75, "clip_weight_1": 0.6,
+      "switch_2": "Off", "lora_name_2": "SDXL\\Abs_licking2.safetensors",
+      "model_weight_2": 0.85, "clip_weight_2": 0.85,
+      "switch_3": "Off", "lora_name_3": "SDXL\\Alien_tongue_inset_pussy.safetensors",
+      "model_weight_3": 1, "clip_weight_3": 1,
+      "lora_stack": ["1308", 0]
+    },
+    "class_type": "CR LoRA Stack",
+    "_meta": {"title": "CR LoRA Stack"}
+  },
+  "1308": {
+    "inputs": {
+      "switch_1": "Off", "lora_name_1": "None",
+      "model_weight_1": 1, "clip_weight_1": 1,
+      "switch_2": "Off", "lora_name_2": "None",
+      "model_weight_2": 1, "clip_weight_2": 1,
+      "switch_3": "Off", "lora_name_3": "None",
+      "model_weight_3": 1, "clip_weight_3": 1,
+      "lora_stack": ["1309", 0]
+    },
+    "class_type": "CR LoRA Stack",
+    "_meta": {"title": "CR LoRA Stack"}
+  },
+  "1309": {
+    "inputs": {
+      "switch_1": "Off", "lora_name_1": "None",
+      "model_weight_1": 1, "clip_weight_1": 1,
+      "switch_2": "Off", "lora_name_2": "None",
+      "model_weight_2": 1, "clip_weight_2": 1,
+      "switch_3": "Off", "lora_name_3": "None",
+      "model_weight_3": 1, "clip_weight_3": 1
+    },
+    "class_type": "CR LoRA Stack",
+    "_meta": {"title": "CR LoRA Stack"}
+  },
+  "1319": {
+    "inputs": {"images": ["1091", 1]},
+    "class_type": "PreviewImage",
+    "_meta": {"title": "Preview Image"}
+  },
+  "1327": {
+    "inputs": {
+      "title_regex": ".*", "input_regex": ".*", "group_regex": ".*",
+      "MODEL": ["4", 0]
+    },
+    "class_type": "Anything Everywhere?",
+    "_meta": {"title": "Anything Everywhere?"}
+  },
+  "1328": {
+    "inputs": {"CLIP": ["10", 1]},
+    "class_type": "Anything Everywhere",
+    "_meta": {"title": "Anything Everywhere"}
+  },
+  "1329": {
+    "inputs": {"VAE": ["4", 2]},
+    "class_type": "Anything Everywhere",
+    "_meta": {"title": "Anything Everywhere"}
+  },
+  "1339": {
+    "inputs": {"filename_prefix": "ComfyUI", "images": ["13", 0]},
+    "class_type": "SaveImage",
+    "_meta": {"title": "Save Image"}
+  },
+  "1343": {
+    "inputs": {"multiplier": 0.5, "model": ["10", 0]},
+    "class_type": "RescaleCFG",
+    "_meta": {"title": "RescaleCFG"}
+  },
+  "1345": {
+    "inputs": {
+      "action": "append", "tidy_tags": "yes",
+      "text_a": ["842", 0], "text_b": ["1300", 0], "text_c": ""
+    },
+    "class_type": "StringFunction|pysssss",
+    "_meta": {"title": "Multiple site prompting"}
+  },
+  "1404": {
+    "inputs": {"model_name": "segm/skin_yolov8n-seg_800.pt"},
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {"title": "UltralyticsDetectorProvider"}
+  },
+  "1405": {
+    "inputs": {"model_name": "segm/skin_yolov8n-seg_800.pt"},
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {"title": "UltralyticsDetectorProvider"}
+  },
+  "1408": {
+    "inputs": {
+      "weight": 0.6, "weight_type": "linear",
+      "combine_embeds": "concat",
+      "start_at": 0, "end_at": 1,
+      "embeds_scaling": "V only"
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": {"title": "IPAdapter Advanced"}
+  },
+  "1412": {
+    "inputs": {
+      "lora_name": "SDXL\\Style\\ill_pandacorya_StyleV2.safetensors",
+      "strength_model": 0.31, "strength_clip": 0.28,
+      "model": ["25", 0], "clip": ["50", 0]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1413": {
+    "inputs": {
+      "lora_name": "SDXL\\Style\\pijaC.safetensors",
+      "strength_model": 0.3, "strength_clip": 0.5,
+      "model": ["1412", 0], "clip": ["1412", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1414": {
+    "inputs": {
+      "lora_name": "SDXL\\Style\\Fugtrup-ArtStyle.safetensors",
+      "strength_model": 0.4, "strength_clip": 0.5,
+      "model": ["1413", 0], "clip": ["1413", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1415": {
+    "inputs": {
+      "lora_name": "SDXL\\prywinko-guy90-Illust-Lycorisv1.safetensors",
+      "strength_model": 0.45, "strength_clip": 0.36,
+      "model": ["1418", 0], "clip": ["1418", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1416": {
+    "inputs": {
+      "lora_name": "SDXL\\Style\\ck-shadow-circuit-IL-000012.safetensors",
+      "strength_model": 0.35, "strength_clip": 0.4,
+      "model": ["1417", 0], "clip": ["1417", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1417": {
+    "inputs": {
+      "lora_name": "SDXL\\96YOTTEA-WAI.safetensors",
+      "strength_model": 0.35, "strength_clip": 0.45,
+      "model": ["1415", 0], "clip": ["1415", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1418": {
+    "inputs": {
+      "lora_name": "SDXL\\Septya.safetensors",
+      "strength_model": 0.75, "strength_clip": 0.75,
+      "model": ["1414", 0], "clip": ["1414", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  },
+  "1424": {
+    "inputs": {"Value": 25},
+    "class_type": "DF_Integer",
+    "_meta": {"title": "Integer"}
+  },
+  "1425": {
+    "inputs": {
+      "lora_name": "SDXL\\Style\\ill_pandacorya_StyleV2.safetensors",
+      "strength_model": 0.3, "strength_clip": 0.3
+    },
+    "class_type": "LoraLoader",
+    "_meta": {"title": "Load LoRA"}
+  }
+}

@@ -28,6 +28,7 @@ public class CommandManager {
         addCommand(new FormatTagsCommand());
         addCommand(new CgachaPrefixCommand());
         addCommand(new WaifuGachaPrefixCommand());
+        addCommand(new DeviantArtPostCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

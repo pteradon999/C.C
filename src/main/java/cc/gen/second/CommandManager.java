@@ -59,6 +59,10 @@ public class CommandManager {
 
     public void handle(MessageReceivedEvent event) {
         String prefix = config.get("prefix");
+        if (prefix == null || prefix.isEmpty()) {
+            LOGGER.warn("Bot prefix is not configured — ignoring message");
+            return;
+        }
         String content = event.getMessage().getContentRaw();
 
         // Check if message starts with prefix

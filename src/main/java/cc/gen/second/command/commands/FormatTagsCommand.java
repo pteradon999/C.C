@@ -19,6 +19,10 @@ public class FormatTagsCommand implements ICommand {
             return;
         }
         SlashCommandInteractionEvent event = ctx.getSlashEvent();
+        if (event.getOption("text") == null) {
+            event.reply("❌ Please provide the `text` option.").setEphemeral(true).queue();
+            return;
+        }
         String inputText = event.getOption("text").getAsString();
 
         String[] lines = inputText.split("\\r?\\n");

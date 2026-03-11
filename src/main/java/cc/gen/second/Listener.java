@@ -29,6 +29,10 @@ public class Listener extends ListenerAdapter {
         User user = event.getAuthor();
         String prefix = config.get("prefix");
         String tagPrefix = config.get("tag_prefix");
+        if (prefix == null || tagPrefix == null) {
+            LOGGER.warn("prefix or tag_prefix not configured — ignoring message");
+            return;
+        }
         String raw = event.getMessage().getContentRaw();
         MessageChannel channel = event.getChannel();
 

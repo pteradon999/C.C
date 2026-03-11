@@ -6,6 +6,8 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -13,13 +15,17 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 public class FolderWatchCommand implements ICommand {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FolderWatchCommand.class);
     private static final Set<TextChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private static final Map<String, String> lastProcessed = new ConcurrentHashMap<>();
     private static ScheduledExecutorService watcher;
+    private static final Object WATCHER_LOCK = new Object();
 
     private static final String PNG = ".png";
     private static final String MP4 = ".mp4";
-    private static final String OWNER_ID = "253963350944251915";
+    private static final String OWNER_ID = System.getenv("OWNER_ID") != null
+            ? System.getenv("OWNER_ID")
+            : "253963350944251915";
     private static final long MAX_FILE_SIZE = 25L * 1024 * 1024; // 25 MB Discord limit
 
     private static final String PNG_FOLDER = System.getenv("IMAGE_FOLDER_PATH") != null
@@ -41,13 +47,15 @@ public class FolderWatchCommand implements ICommand {
         activeChannels.add(channel);
         channel.sendMessage("Folder monitoring for images and videos is activated for this channel.").queue();
 
-        if (watcher == null || watcher.isShutdown()) {
-            watcher = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "FolderWatcher");
-                t.setDaemon(true);
-                return t;
-            });
-            watcher.scheduleWithFixedDelay(this::monitorFolders, 0, 1, TimeUnit.MINUTES);
+        synchronized (WATCHER_LOCK) {
+            if (watcher == null || watcher.isShutdown()) {
+                watcher = Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r, "FolderWatcher");
+                    t.setDaemon(true);
+                    return t;
+                });
+                watcher.scheduleWithFixedDelay(this::monitorFolders, 0, 1, TimeUnit.MINUTES);
+            }
         }
     }
 
@@ -101,7 +109,7 @@ public class FolderWatchCommand implements ICommand {
                         .queue();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Error monitoring folder: {}", folderPath, e);
         }
     }
 

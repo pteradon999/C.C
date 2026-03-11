@@ -29,6 +29,7 @@ public class CommandManager {
         addCommand(new FormatTagsCommand());
         addCommand(new CgachaPrefixCommand());
         addCommand(new WaifuGachaPrefixCommand());
+        addCommand(new RateitCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

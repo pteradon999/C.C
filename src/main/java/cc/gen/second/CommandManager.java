@@ -30,6 +30,7 @@ public class CommandManager {
         addCommand(new WaifuGachaPrefixCommand());
         addCommand(new RateitCommand());
         addCommand(new RatemeCommand());
+        addCommand(new ProbCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

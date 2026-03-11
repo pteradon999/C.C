@@ -30,6 +30,7 @@ public class CommandManager {
         addCommand(new CgachaPrefixCommand());
         addCommand(new WaifuGachaPrefixCommand());
         addCommand(new RateitCommand());
+        addCommand(new RatemeCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

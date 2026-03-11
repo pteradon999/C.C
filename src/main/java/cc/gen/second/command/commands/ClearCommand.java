@@ -11,6 +11,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -69,8 +71,29 @@ public class ClearCommand implements ICommand {
                 return;
             }
 
+            // Partition into bulk-deletable (<2 weeks old) and old messages
+            OffsetDateTime twoWeeksAgo = OffsetDateTime.now().minusDays(14);
+            List<Message> recent = new ArrayList<>();
+            List<Message> old = new ArrayList<>();
+
             for (Message m : messages) {
-                m.delete().queue(null, err -> {}); // ignore failures (e.g., permissions on some messages)
+                if (m.getTimeCreated().isAfter(twoWeeksAgo)) {
+                    recent.add(m);
+                } else {
+                    old.add(m);
+                }
+            }
+
+            // Bulk delete recent messages (requires >= 2)
+            if (recent.size() >= 2) {
+                channel.deleteMessages(recent).queue(null, err -> {});
+            } else if (recent.size() == 1) {
+                recent.get(0).delete().queue(null, err -> {});
+            }
+
+            // Individually delete old messages (bulk delete doesn't support >2 week old messages)
+            for (Message m : old) {
+                m.delete().queue(null, err -> {});
             }
 
             // Optionally delete the invoking message too (prefix case)

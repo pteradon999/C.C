@@ -5,14 +5,13 @@ import cc.gen.second.command.ICommand;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
 public class PingCommand implements ICommand {
 
     @Override
-    public void handle(CommandContext ctx) throws SQLException { // <-- drop "throws SQLException" if your interface doesn't have it
+    public void handle(CommandContext ctx) {
         long gatewayPing = ctx.isSlash()
                 ? ctx.getSlashEvent().getJDA().getGatewayPing()
                 : ctx.getMessageEvent().getJDA().getGatewayPing();

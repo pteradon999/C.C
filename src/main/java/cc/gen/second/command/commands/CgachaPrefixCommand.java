@@ -404,7 +404,9 @@ public class CgachaPrefixCommand implements ICommand {
         if (list == null || list.isEmpty()) {
             File f = new File("./" + c.fileBase + ".txt"); // FS fallback
             if (f.exists()) {
-                list = parseEntries(new FileInputStream(f));
+                try (FileInputStream fis = new FileInputStream(f)) {
+                    list = parseEntries(fis);
+                }
             }
         }
         return (list != null) ? list : Collections.emptyList();

@@ -13,7 +13,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
@@ -21,7 +20,6 @@ import java.util.regex.Pattern;
 
 public class WaifuGachaPrefixCommand implements ICommand {
 
-    private static final DecimalFormat ONE_DEC = new DecimalFormat("0.0");
     private static final int DISCORD_LIMIT = 2000;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -241,33 +239,9 @@ public class WaifuGachaPrefixCommand implements ICommand {
         return range.max;
     }
 
-    private List<Waifu> loadWaifus() {
-        try {
-            List<Waifu> list = tryLoad("characters.json");
-            if(list!=null&&!list.isEmpty()) return list;
-            File f=new File("./characters.json");
-            if(f.exists()) return parseWaifus(new FileInputStream(f));
-        } catch(IOException ignored){}
-        return Collections.emptyList();
-    }
-
-    private List<Waifu> tryLoad(String p) throws IOException {
-        ClassLoader cl=Thread.currentThread().getContextClassLoader();
-        if(cl==null) cl=getClass().getClassLoader();
-        URL u=cl.getResource(p);
-        if(u==null) return null;
-        try(InputStream in=u.openStream()){ return parseWaifus(in); }
-    }
-
-    private List<Waifu> parseWaifus(InputStream in) throws IOException {
-        List<Waifu> out=new ArrayList<>();
-        JsonNode root=MAPPER.readTree(in);
-        if(root.isArray()) for(JsonNode n:root) out.add(new Waifu(n));
-        return out;
-    }
 
     private static String escapeBold(String s) {
-        return s.replace("**","\\\\*\\\\*");
+        return s.replace("**", "\\*\\*");
     }
 
     private static List<String> splitForDiscord(String t,int lim){

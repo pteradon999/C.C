@@ -28,6 +28,7 @@ public class CommandManager {
         addCommand(new FormatTagsCommand());
         addCommand(new CgachaPrefixCommand());
         addCommand(new WaifuGachaPrefixCommand());
+        addCommand(new ComfyUICommand());
         addCommand(new RateitCommand());
         addCommand(new RatemeCommand());
         addCommand(new ProbCommand());

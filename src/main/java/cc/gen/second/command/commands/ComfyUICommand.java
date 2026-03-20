@@ -21,8 +21,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ComfyUICommand implements ICommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComfyUICommand.class);
@@ -30,6 +32,12 @@ public class ComfyUICommand implements ICommand {
     private static final String OWNER_ID = "253963350944251915";
     private static final long POLL_INTERVAL_MS = 3000;
     private static final long MAX_WAIT_MS = 600_000; // 10 minutes max
+    private static final int MAX_COUNT = 50;
+
+    // LoRA chain node IDs in workflow order (model/clip wiring)
+    private static final String[] LORA_CHAIN_NODE_IDS = {
+            "1412", "1413", "1414", "1418", "1415", "1417", "1416", "10"
+    };
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -43,6 +51,13 @@ public class ComfyUICommand implements ICommand {
 
     // Cached workflow template
     private static volatile String workflowTemplate;
+
+    // Active generation loops per channel (for stop command)
+    private static final ConcurrentHashMap<String, AtomicBoolean> activeLoops = new ConcurrentHashMap<>();
+
+    // Persistent LoRA weight overrides (survive across commands)
+    // Key: node ID, Value: [strength_model, strength_clip]
+    private static final ConcurrentHashMap<String, double[]> persistentLoraWeights = new ConcurrentHashMap<>();
 
     private static String getComfyUrl() {
         String url = config.get("COMFYUI_URL");
@@ -68,74 +83,270 @@ public class ComfyUICommand implements ICommand {
         }
 
         List<String> args = ctx.getArgs();
-        if (args != null && !args.isEmpty() && args.get(0).equalsIgnoreCase("help")) {
-            sendHelp(ctx.getChannel());
+
+        // Route subcommands
+        if (args != null && !args.isEmpty()) {
+            String sub = args.get(0).toLowerCase();
+            switch (sub) {
+                case "help":
+                    sendHelp(ctx.getChannel());
+                    return;
+                case "stop":
+                    handleStop(ctx);
+                    return;
+                case "loras":
+                    handleListLoras(ctx);
+                    return;
+                case "lora":
+                    handleSetLora(ctx, args.subList(1, args.size()));
+                    return;
+            }
+        }
+
+        // Check if a loop is already running in this channel
+        String channelId = ctx.getChannel().getId();
+        if (activeLoops.containsKey(channelId)) {
+            ctx.getChannel().sendMessage("A generation loop is already running. Use `_comfy stop` first.").queue();
             return;
         }
 
         // Parse parameters from args
         WorkflowParams params = parseArgs(args);
+        executeGeneration(ctx, params);
+    }
 
-        ctx.getChannel().sendMessage("Queuing workflow on ComfyUI...").queue();
+    private void handleStop(CommandContext ctx) {
+        String channelId = ctx.getChannel().getId();
+        AtomicBoolean running = activeLoops.get(channelId);
+        if (running != null) {
+            running.set(false);
+            ctx.getChannel().sendMessage("Stopping generation loop...").queue();
+        } else {
+            ctx.getChannel().sendMessage("No active generation loop in this channel.").queue();
+        }
+    }
+
+    private void handleListLoras(CommandContext ctx) {
+        try {
+            List<LoraInfo> loras = getActiveLoraList();
+            if (loras.isEmpty()) {
+                ctx.getChannel().sendMessage("No active LoRAs found.").queue();
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < loras.size(); i++) {
+                LoraInfo l = loras.get(i);
+                // Show overridden weights if they exist
+                double[] override = persistentLoraWeights.get(l.nodeId);
+                double modelW = override != null ? override[0] : l.strengthModel;
+                double clipW = override != null ? override[1] : l.strengthClip;
+                String marker = override != null ? " *" : "";
+                sb.append(String.format("**%d.** `%s`\n   model: **%.2f** | clip: **%.2f**%s\n",
+                        i + 1, l.name, modelW, clipW, marker));
+            }
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setColor(new Color(138, 43, 226))
+                    .setTitle("Active LoRAs")
+                    .setDescription(sb.toString());
+
+            if (!persistentLoraWeights.isEmpty()) {
+                embed.setFooter("* = weight overridden via _comfy lora");
+            }
+
+            ctx.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (IOException e) {
+            LOGGER.error("Failed to list LoRAs", e);
+            ctx.getChannel().sendMessage("Failed to read workflow template: " + e.getMessage()).queue();
+        }
+    }
+
+    private void handleSetLora(CommandContext ctx, List<String> args) {
+        if (args.isEmpty()) {
+            ctx.getChannel().sendMessage("Usage: `_comfy lora 1:0.2 2:0.6` or `_comfy lora 1:0.3:0.4` (model:clip)\n"
+                    + "Use `_comfy lora reset` to clear overrides.").queue();
+            return;
+        }
+
+        // Handle reset
+        if (args.get(0).equalsIgnoreCase("reset")) {
+            persistentLoraWeights.clear();
+            ctx.getChannel().sendMessage("LoRA weight overrides cleared.").queue();
+            return;
+        }
+
+        try {
+            List<LoraInfo> loras = getActiveLoraList();
+            StringBuilder result = new StringBuilder();
+
+            for (String arg : args) {
+                // Format: index:model_weight or index:model_weight:clip_weight
+                String[] parts = arg.split(":");
+                if (parts.length < 2) {
+                    result.append("Skipped invalid: `").append(arg).append("`\n");
+                    continue;
+                }
+
+                int index;
+                double modelWeight, clipWeight;
+                try {
+                    index = Integer.parseInt(parts[0]);
+                    modelWeight = Double.parseDouble(parts[1]);
+                    clipWeight = parts.length >= 3 ? Double.parseDouble(parts[2]) : modelWeight;
+                } catch (NumberFormatException e) {
+                    result.append("Skipped invalid: `").append(arg).append("`\n");
+                    continue;
+                }
+
+                if (index < 1 || index > loras.size()) {
+                    result.append("LoRA #").append(index).append(" out of range (1-").append(loras.size()).append(")\n");
+                    continue;
+                }
+
+                LoraInfo lora = loras.get(index - 1);
+                persistentLoraWeights.put(lora.nodeId, new double[]{modelWeight, clipWeight});
+                result.append(String.format("**%d.** `%s` -> model: **%.2f** | clip: **%.2f**\n",
+                        index, lora.name, modelWeight, clipWeight));
+            }
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setColor(new Color(138, 43, 226))
+                    .setTitle("LoRA Weights Updated")
+                    .setDescription(result.toString())
+                    .setFooter("Weights persist until reset or bot restart");
+
+            ctx.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (IOException e) {
+            LOGGER.error("Failed to set LoRA weights", e);
+            ctx.getChannel().sendMessage("Failed to read workflow template: " + e.getMessage()).queue();
+        }
+    }
+
+    private List<LoraInfo> getActiveLoraList() throws IOException {
+        String template = loadWorkflowTemplate();
+        JSONObject workflow = new JSONObject(template);
+        List<LoraInfo> active = new ArrayList<>();
+
+        for (String nodeId : LORA_CHAIN_NODE_IDS) {
+            if (!workflow.has(nodeId)) continue;
+            JSONObject inputs = workflow.getJSONObject(nodeId).getJSONObject("inputs");
+            double strengthModel = inputs.optDouble("strength_model", 0);
+            double strengthClip = inputs.optDouble("strength_clip", 0);
+
+            if (strengthModel != 0 || strengthClip != 0) {
+                String loraName = inputs.optString("lora_name", "unknown");
+                // Extract short name: strip path and extension
+                String shortName = loraName;
+                int lastBackslash = shortName.lastIndexOf('\\');
+                int lastSlash = shortName.lastIndexOf('/');
+                int lastSep = Math.max(lastBackslash, lastSlash);
+                if (lastSep >= 0) shortName = shortName.substring(lastSep + 1);
+                if (shortName.endsWith(".safetensors")) {
+                    shortName = shortName.substring(0, shortName.length() - ".safetensors".length());
+                }
+                active.add(new LoraInfo(nodeId, shortName, strengthModel, strengthClip));
+            }
+        }
+        return active;
+    }
+
+    private void executeGeneration(CommandContext ctx, WorkflowParams params) {
+        String channelId = ctx.getChannel().getId();
+        boolean isLoop = params.infinite || params.count > 1;
+        String countLabel = params.infinite ? "infinite" : String.valueOf(params.count);
+
+        ctx.getChannel().sendMessage("Queuing workflow on ComfyUI..."
+                + (isLoop ? " (count: " + countLabel + ")" : "")).queue();
 
         EXECUTOR.submit(() -> {
+            AtomicBoolean running = new AtomicBoolean(true);
+            if (isLoop) {
+                activeLoops.put(channelId, running);
+            }
+
             try {
-                String promptId = queueWorkflow(params);
-                ctx.getChannel().sendMessage("Workflow queued. Prompt ID: `" + promptId + "`. Waiting for result...").queue();
+                int iterations = params.infinite ? Integer.MAX_VALUE : params.count;
+                for (int i = 0; i < iterations && running.get(); i++) {
+                    try {
+                        String promptId = queueWorkflow(params);
+                        if (i == 0) {
+                            ctx.getChannel().sendMessage("Workflow queued. Prompt ID: `" + promptId + "`. Waiting for result...").queue();
+                        }
 
-                // Poll for completion
-                JSONObject result = pollForResult(promptId);
-                if (result == null) {
-                    ctx.getChannel().sendMessage("Workflow timed out after 10 minutes.").queue();
-                    return;
+                        JSONObject result = pollForResult(promptId);
+                        if (result == null) {
+                            ctx.getChannel().sendMessage("Workflow timed out after 10 minutes.").queue();
+                            break;
+                        }
+
+                        ImageInfo imageInfo = extractOutputImage(result, promptId);
+                        if (imageInfo == null) {
+                            ctx.getChannel().sendMessage("Workflow completed but no output image found.").queue();
+                            continue;
+                        }
+
+                        byte[] imageBytes = downloadImage(imageInfo);
+                        if (imageBytes == null || imageBytes.length == 0) {
+                            ctx.getChannel().sendMessage("Failed to download the generated image.").queue();
+                            continue;
+                        }
+
+                        EmbedBuilder embed = buildResultEmbed(params, i + 1, isLoop);
+                        ctx.getChannel().sendMessageEmbeds(embed.build())
+                                .addFiles(FileUpload.fromData(imageBytes, imageInfo.filename))
+                                .queue();
+
+                    } catch (Exception e) {
+                        LOGGER.error("ComfyUI workflow failed on iteration " + (i + 1), e);
+                        ctx.getChannel().sendMessage("Workflow failed: " + e.getMessage()).queue();
+                        if (!isLoop) break;
+                    }
                 }
 
-                // Extract output image info
-                ImageInfo imageInfo = extractOutputImage(result, promptId);
-                if (imageInfo == null) {
-                    ctx.getChannel().sendMessage("Workflow completed but no output image found.").queue();
-                    return;
+                if (isLoop && !running.get()) {
+                    ctx.getChannel().sendMessage("Generation loop stopped.").queue();
                 }
-
-                // Download and send image
-                byte[] imageBytes = downloadImage(imageInfo);
-                if (imageBytes == null || imageBytes.length == 0) {
-                    ctx.getChannel().sendMessage("Failed to download the generated image.").queue();
-                    return;
-                }
-
-                // Build embed with generation info
-                EmbedBuilder embed = new EmbedBuilder()
-                        .setColor(new Color(138, 43, 226))
-                        .setTitle("Generation Complete")
-                        .addField("Seed", String.valueOf(params.seed), true)
-                        .addField("Steps", String.valueOf(params.steps), true)
-                        .addField("CFG", String.valueOf(params.cfg), true)
-                        .addField("Mode", getModeLabel(params.mode), true)
-                        .addField("Style", params.style == 1 ? "Rindex" : "Desuka", true)
-                        .addField("Resolution", params.resolution, true);
-
-                if (params.character != null && !params.character.isEmpty()) {
-                    embed.addField("Character", params.character, false);
-                }
-                if (params.tags != null && !params.tags.isEmpty()) {
-                    embed.addField("Tags", params.tags, false);
-                }
-
-                ctx.getChannel().sendMessageEmbeds(embed.build())
-                        .addFiles(FileUpload.fromData(imageBytes, imageInfo.filename))
-                        .queue();
-
-            } catch (Exception e) {
-                LOGGER.error("ComfyUI workflow failed", e);
-                ctx.getChannel().sendMessage("Workflow failed: " + e.getMessage()).queue();
+            } finally {
+                activeLoops.remove(channelId);
             }
         });
+    }
+
+    private EmbedBuilder buildResultEmbed(WorkflowParams params, int iteration, boolean isLoop) {
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(new Color(138, 43, 226))
+                .setTitle("Generation Complete" + (isLoop ? " (#" + iteration + ")" : ""))
+                .addField("Seed", String.valueOf(params.seed), true)
+                .addField("Steps", String.valueOf(params.steps), true)
+                .addField("CFG", String.valueOf(params.cfg), true)
+                .addField("Mode", getModeLabel(params.mode), true)
+                .addField("Style", params.style == 1 ? "Rindex" : "Desuka", true)
+                .addField("Resolution", params.resolution, true);
+
+        if (params.scaleBy != 1.5) {
+            embed.addField("Scale", String.valueOf(params.scaleBy), true);
+        }
+        if (params.character != null && !params.character.isEmpty()) {
+            embed.addField("Character", params.character, false);
+        }
+        if (params.tags != null && !params.tags.isEmpty()) {
+            embed.addField("Gelbooru Tags", params.tags, false);
+        }
+        if (params.generalTags != null && !params.generalTags.isEmpty()) {
+            embed.addField("Extra Tags", params.generalTags, false);
+        }
+        if (!persistentLoraWeights.isEmpty()) {
+            embed.setFooter("LoRA weights overridden");
+        }
+        return embed;
     }
 
     private WorkflowParams parseArgs(List<String> args) {
         WorkflowParams params = new WorkflowParams();
         if (args == null) return params;
+
+        List<String> generalTagParts = new ArrayList<>();
 
         for (String arg : args) {
             String lower = arg.toLowerCase();
@@ -175,8 +386,33 @@ public class ComfyUICommand implements ICommand {
             } else if (lower.startsWith("tags:")) {
                 String val = arg.substring(5);
                 if (!val.isEmpty()) params.tags = val;
+            } else if (lower.startsWith("scale:")) {
+                try {
+                    params.scaleBy = Double.parseDouble(arg.substring(6));
+                    if (params.scaleBy < 0.5) params.scaleBy = 0.5;
+                    if (params.scaleBy > 4.0) params.scaleBy = 4.0;
+                } catch (NumberFormatException ignored) {}
+            } else if (lower.startsWith("count:")) {
+                String val = arg.substring(6).toLowerCase();
+                if (val.equals("inf") || val.equals("infinite") || val.equals("loop")) {
+                    params.infinite = true;
+                } else {
+                    try {
+                        params.count = Integer.parseInt(val);
+                        if (params.count < 1) params.count = 1;
+                        if (params.count > MAX_COUNT) params.count = MAX_COUNT;
+                    } catch (NumberFormatException ignored) {}
+                }
+            } else {
+                // Unrecognized arg becomes a general tag
+                generalTagParts.add(arg);
             }
         }
+
+        if (!generalTagParts.isEmpty()) {
+            params.generalTags = String.join(", ", generalTagParts);
+        }
+
         return params;
     }
 
@@ -221,6 +457,14 @@ public class ComfyUICommand implements ICommand {
         // Set resolution (node 1108)
         workflow.getJSONObject("1108").getJSONObject("inputs").put("resolution", params.resolution);
 
+        // Set upscale multiplier (node 11 - Множитель Апскейла)
+        workflow.getJSONObject("11").getJSONObject("inputs").put("scale_by", params.scaleBy);
+
+        // Inject general tags into prompt (node 797 text_b - appended to final prompt)
+        if (params.generalTags != null && !params.generalTags.isEmpty()) {
+            workflow.getJSONObject("797").getJSONObject("inputs").put("text_b", params.generalTags);
+        }
+
         // Inject Gelbooru credentials if configured (nodes 842, 1300)
         String gelbooruUserId = getGelbooruUserId();
         String gelbooruApiKey = getGelbooruApiKey();
@@ -236,6 +480,17 @@ public class ComfyUICommand implements ICommand {
         // Set Gelbooru AND_tags if provided (node 842)
         if (params.tags != null && !params.tags.isEmpty()) {
             workflow.getJSONObject("842").getJSONObject("inputs").put("AND_tags", params.tags);
+        }
+
+        // Apply persistent LoRA weight overrides
+        for (Map.Entry<String, double[]> entry : persistentLoraWeights.entrySet()) {
+            String nodeId = entry.getKey();
+            double[] weights = entry.getValue();
+            if (workflow.has(nodeId)) {
+                JSONObject inputs = workflow.getJSONObject(nodeId).getJSONObject("inputs");
+                inputs.put("strength_model", weights[0]);
+                inputs.put("strength_clip", weights[1]);
+            }
         }
 
         // Randomize DPRandomGenerator seeds for variety
@@ -375,24 +630,41 @@ public class ComfyUICommand implements ICommand {
                 .setColor(new Color(138, 43, 226))
                 .setTitle("ComfyUI Workflow Controller")
                 .setDescription("Generate images using your ComfyUI workflow.")
-                .addField("Usage", "`_comfy [options]`", false)
-                .addField("Options", String.join("\n",
+                .addField("Usage", "`_comfy [tags] [options]`", false)
+                .addField("Generation Options", String.join("\n",
                         "`seed:<number>` - Set seed (-1 for random, default: random)",
                         "`steps:<number>` - Set sampling steps (default: 25)",
                         "`cfg:<number>` - Set CFG scale (default: 6.5)",
+                        "`scale:<number>` - Upscale multiplier (default: 1.5, range: 0.5-4.0)",
                         "`mode:<1-4>` - Prompt mode:",
                         "  1 = Normal, 2 = Combo, 3 = Booru (default), 4 = Combo+Auto",
                         "`style:<rindex|desuka>` - Style preset (default: rindex)",
                         "`res:<preset>` - Resolution preset (default: landscape - 1344x768)",
                         "`char:<name>` - Set character (switches to manual mode)",
                         "`random` - Use random character from built-in list",
-                        "`tags:<tags>` - Set Gelbooru AND_tags (e.g. `tags:rwby,solo`)"
+                        "`tags:<tags>` - Set Gelbooru AND_tags (e.g. `tags:rwby,solo`)",
+                        "`count:<number|inf>` - Generate multiple images (max " + MAX_COUNT + ", or `inf` for loop)",
+                        "",
+                        "**Bare text** (no prefix) is appended to the prompt as extra tags.",
+                        "Example: `_comfy 1girl red_hair` adds those tags to the prompt."
+                ), false)
+                .addField("LoRA Commands", String.join("\n",
+                        "`_comfy loras` - List active LoRAs and their weights",
+                        "`_comfy lora 1:0.2 2:0.6` - Set LoRA weights by index (model weight)",
+                        "`_comfy lora 1:0.3:0.4` - Set model and clip weights separately",
+                        "`_comfy lora reset` - Clear all weight overrides"
+                ), false)
+                .addField("Loop Control", String.join("\n",
+                        "`_comfy count:5` - Generate 5 images in sequence",
+                        "`_comfy count:inf` - Generate until stopped",
+                        "`_comfy stop` - Stop running generation loop"
                 ), false)
                 .addField("Examples", String.join("\n",
                         "`_comfy` - Generate with defaults",
-                        "`_comfy char:1girl,ganyu steps:30`",
-                        "`_comfy random mode:1 cfg:7`",
-                        "`_comfy seed:12345 style:desuka`"
+                        "`_comfy 1girl beach sunset` - Generate with extra tags",
+                        "`_comfy 1girl tags:rwby scale:2.0 steps:30` - Tags + Gelbooru + upscale",
+                        "`_comfy count:inf random mode:1 cfg:7` - Infinite loop with random chars",
+                        "`_comfy lora 1:0.5 3:0.8` - Set LoRA weights, then generate normally"
                 ), false);
 
         channel.sendMessageEmbeds(embed.build()).queue();
@@ -425,7 +697,7 @@ public class ComfyUICommand implements ICommand {
 
     @Override
     public String getHelp() {
-        return "Control ComfyUI workflow from Discord. Usage: `_comfy [options]` - Run `_comfy help` for details.";
+        return "Control ComfyUI workflow from Discord. Usage: `_comfy [tags] [options]` - Run `_comfy help` for details.";
     }
 
     // --- Inner classes ---
@@ -440,6 +712,10 @@ public class ComfyUICommand implements ICommand {
         String character = "";
         int charSwitch = 1;       // 1=random, 2=manual
         String tags = "";         // Gelbooru AND_tags (empty = use workflow default)
+        double scaleBy = 1.5;     // Upscale multiplier (node 11)
+        String generalTags = "";  // Extra tags appended to prompt (node 797 text_b)
+        int count = 1;            // Number of images to generate
+        boolean infinite = false; // Infinite generation loop
     }
 
     private static class ImageInfo {
@@ -451,6 +727,20 @@ public class ComfyUICommand implements ICommand {
             this.filename = filename;
             this.subfolder = subfolder;
             this.type = type;
+        }
+    }
+
+    private static class LoraInfo {
+        final String nodeId;
+        final String name;
+        final double strengthModel;
+        final double strengthClip;
+
+        LoraInfo(String nodeId, String name, double strengthModel, double strengthClip) {
+            this.nodeId = nodeId;
+            this.name = name;
+            this.strengthModel = strengthModel;
+            this.strengthClip = strengthClip;
         }
     }
 }

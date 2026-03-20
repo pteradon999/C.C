@@ -460,9 +460,15 @@ public class ComfyUICommand implements ICommand {
         // Set upscale multiplier (node 11 - Множитель Апскейла)
         workflow.getJSONObject("11").getJSONObject("inputs").put("scale_by", params.scaleBy);
 
-        // Inject general tags into prompt (node 797 text_b - appended to final prompt)
+        // Disconnect node 1300 (hardcoded Sailor Moon tags) from prompt pipeline
+        workflow.getJSONObject("1345").getJSONObject("inputs").put("text_b", "");
+
+        // Inject general tags into ГЕНЕРАЛКА fields in prompt assemblers
         if (params.generalTags != null && !params.generalTags.isEmpty()) {
-            workflow.getJSONObject("797").getJSONObject("inputs").put("text_b", params.generalTags);
+            // Node 843 (Booru Prompter mode): text_e = "ГЕНЕРАЛКА"
+            workflow.getJSONObject("843").getJSONObject("inputs").put("text_e", params.generalTags);
+            // Node 794 (Combo+Auto mode): text_d = "ГЕНЕРАЛКА"
+            workflow.getJSONObject("794").getJSONObject("inputs").put("text_d", params.generalTags);
         }
 
         // Inject Gelbooru credentials if configured (nodes 842, 1300)
@@ -713,7 +719,7 @@ public class ComfyUICommand implements ICommand {
         int charSwitch = 1;       // 1=random, 2=manual
         String tags = "";         // Gelbooru AND_tags (empty = use workflow default)
         double scaleBy = 1.5;     // Upscale multiplier (node 11)
-        String generalTags = "";  // Extra tags appended to prompt (node 797 text_b)
+        String generalTags = "";  // Extra tags injected into ГЕНЕРАЛКА fields (nodes 843/794)
         int count = 1;            // Number of images to generate
         boolean infinite = false; // Infinite generation loop
     }

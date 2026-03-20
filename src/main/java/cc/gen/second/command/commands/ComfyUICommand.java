@@ -463,13 +463,13 @@ public class ComfyUICommand implements ICommand {
         // Disconnect node 1300 (hardcoded Sailor Moon tags) from prompt pipeline
         workflow.getJSONObject("1345").getJSONObject("inputs").put("text_b", "");
 
-        // Inject general tags into ГЕНЕРАЛКА fields in prompt assemblers
-        if (params.generalTags != null && !params.generalTags.isEmpty()) {
-            // Node 843 (Booru Prompter mode): text_e = "ГЕНЕРАЛКА"
-            workflow.getJSONObject("843").getJSONObject("inputs").put("text_e", params.generalTags);
-            // Node 794 (Combo+Auto mode): text_d = "ГЕНЕРАЛКА"
-            workflow.getJSONObject("794").getJSONObject("inputs").put("text_d", params.generalTags);
-        }
+        // Replace ГЕНЕРАЛКА placeholder with user's general tags (or clear it)
+        String generalTagValue = (params.generalTags != null && !params.generalTags.isEmpty())
+                ? params.generalTags : "";
+        // Node 843 (Booru Prompter mode): text_e = "ГЕНЕРАЛКА"
+        workflow.getJSONObject("843").getJSONObject("inputs").put("text_e", generalTagValue);
+        // Node 794 (Combo+Auto mode): text_d = "ГЕНЕРАЛКА"
+        workflow.getJSONObject("794").getJSONObject("inputs").put("text_d", generalTagValue);
 
         // Inject Gelbooru credentials if configured (nodes 842, 1300)
         String gelbooruUserId = getGelbooruUserId();

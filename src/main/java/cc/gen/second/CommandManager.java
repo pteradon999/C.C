@@ -29,6 +29,10 @@ public class CommandManager {
         addCommand(new CgachaPrefixCommand());
         addCommand(new WaifuGachaPrefixCommand());
         addCommand(new ComfyUICommand());
+        addCommand(new RateitCommand());
+        addCommand(new RatemeCommand());
+        addCommand(new ProbCommand());
+        addCommand(new RandomImageCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }
@@ -58,6 +62,10 @@ public class CommandManager {
 
     public void handle(MessageReceivedEvent event) {
         String prefix = config.get("prefix");
+        if (prefix == null || prefix.isEmpty()) {
+            LOGGER.warn("Bot prefix is not configured — ignoring message");
+            return;
+        }
         String content = event.getMessage().getContentRaw();
 
         // Check if message starts with prefix

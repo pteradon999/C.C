@@ -26,6 +26,15 @@ public class ClearCommand implements ICommand {
 
         TextChannel channel = (TextChannel) ctx.getChannel();
 
+        // User permission check
+        Member invoker = ctx.isSlash()
+                ? ctx.getSlashEvent().getMember()
+                : ctx.getMessageEvent().getMember();
+        if (invoker == null || !invoker.hasPermission(channel, Permission.MESSAGE_MANAGE)) {
+            reply(ctx, "❌ You need the **Manage Messages** permission to use this command.");
+            return;
+        }
+
         // Bot permission check
         Member self = channel.getGuild().getSelfMember();
         if (!self.hasPermission(channel, Permission.MESSAGE_MANAGE)) {

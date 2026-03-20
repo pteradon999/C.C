@@ -118,6 +118,9 @@ public class ComfyUICommand implements ICommand {
                 if (params.character != null && !params.character.isEmpty()) {
                     embed.addField("Character", params.character, false);
                 }
+                if (params.tags != null && !params.tags.isEmpty()) {
+                    embed.addField("Tags", params.tags, false);
+                }
 
                 ctx.getChannel().sendMessageEmbeds(embed.build())
                         .addFiles(FileUpload.fromData(imageBytes, imageInfo.filename))
@@ -169,6 +172,9 @@ public class ComfyUICommand implements ICommand {
                 params.charSwitch = 2; // manual character mode
             } else if (lower.equals("random") || lower.equals("randomchar")) {
                 params.charSwitch = 1; // random character mode
+            } else if (lower.startsWith("tags:")) {
+                String val = arg.substring(5);
+                if (!val.isEmpty()) params.tags = val;
             }
         }
         return params;
@@ -225,6 +231,11 @@ public class ComfyUICommand implements ICommand {
         if (!gelbooruApiKey.isEmpty()) {
             workflow.getJSONObject("842").getJSONObject("inputs").put("api_key", gelbooruApiKey);
             workflow.getJSONObject("1300").getJSONObject("inputs").put("api_key", gelbooruApiKey);
+        }
+
+        // Set Gelbooru AND_tags if provided (node 842)
+        if (params.tags != null && !params.tags.isEmpty()) {
+            workflow.getJSONObject("842").getJSONObject("inputs").put("AND_tags", params.tags);
         }
 
         // Randomize DPRandomGenerator seeds for variety
@@ -374,7 +385,8 @@ public class ComfyUICommand implements ICommand {
                         "`style:<rindex|desuka>` - Style preset (default: rindex)",
                         "`res:<preset>` - Resolution preset (default: landscape - 1344x768)",
                         "`char:<name>` - Set character (switches to manual mode)",
-                        "`random` - Use random character from built-in list"
+                        "`random` - Use random character from built-in list",
+                        "`tags:<tags>` - Set Gelbooru AND_tags (e.g. `tags:rwby,solo`)"
                 ), false)
                 .addField("Examples", String.join("\n",
                         "`_comfy` - Generate with defaults",
@@ -427,6 +439,7 @@ public class ComfyUICommand implements ICommand {
         String resolution = "landscape - 1344x768 (16:9)";
         String character = "";
         int charSwitch = 1;       // 1=random, 2=manual
+        String tags = "";         // Gelbooru AND_tags (empty = use workflow default)
     }
 
     private static class ImageInfo {

@@ -33,6 +33,7 @@ public class CommandManager {
         addCommand(new RatemeCommand());
         addCommand(new ProbCommand());
         addCommand(new RandomImageCommand());
+        addCommand(new PickUserCommand());
 
         LOGGER.info("Registered {} commands", commands.size());
     }

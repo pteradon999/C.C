@@ -2,54 +2,70 @@ package cc.gen.second.command.commands;
 
 import cc.gen.second.command.CommandContext;
 import cc.gen.second.command.ICommand;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import cc.gen.second.utils.UserListStore;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PickUserCommand implements ICommand {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PickUserCommand.class);
-    private static final int MAX_SCAN = 5000;
-
     @Override
     public void handle(CommandContext ctx) {
-        MessageChannelUnion channel = ctx.getChannel();
-        OffsetDateTime cutoff = OffsetDateTime.now().minusHours(24);
+        List<String> args = ctx.isSlash() ? null : ctx.getArgs();
 
-        channel.getIterableHistory()
-                .takeAsync(MAX_SCAN)
-                .thenAccept(messages -> {
-                    LinkedHashMap<String, String> activeUsers = new LinkedHashMap<>();
-                    for (Message msg : messages) {
-                        if (msg.getTimeCreated().isBefore(cutoff)) continue;
-                        User author = msg.getAuthor();
-                        if (author.isBot()) continue;
-                        activeUsers.putIfAbsent(author.getId(), author.getEffectiveName());
-                    }
+        if (args != null && !args.isEmpty()) {
+            String sub = args.get(0).toLowerCase();
 
-                    if (activeUsers.isEmpty()) {
-                        channel.sendMessage("За последние 24 часа активных пользователей не найдено.").queue();
-                        return;
-                    }
+            if (sub.equals("add") && args.size() >= 2) {
+                String name = String.join(" ", args.subList(1, args.size())).trim();
+                if (name.isEmpty()) {
+                    reply(ctx, "Укажи имя: `C.C_pickuser add <имя>`");
+                    return;
+                }
+                boolean added = UserListStore.add(name);
+                reply(ctx, added
+                        ? "✅ Добавлен: **" + name + "**"
+                        : "⚠️ **" + name + "** уже в списке");
+                return;
+            }
 
-                    List<String> nicks = new ArrayList<>(activeUsers.values());
-                    String picked = nicks.get(ThreadLocalRandom.current().nextInt(nicks.size()));
-                    channel.sendMessage("🎲 Случайный активный юзер: **" + picked + "**").queue();
-                })
-                .exceptionally(err -> {
-                    LOGGER.error("Failed to scan channel history for active users", err);
-                    channel.sendMessage("Не удалось получить историю канала: " + err.getMessage()).queue();
-                    return null;
-                });
+            if (sub.equals("remove") && args.size() >= 2) {
+                String name = String.join(" ", args.subList(1, args.size())).trim();
+                boolean removed = UserListStore.remove(name);
+                reply(ctx, removed
+                        ? "🗑 Удалён: **" + name + "**"
+                        : "⚠️ **" + name + "** не найден в списке");
+                return;
+            }
+
+            if (sub.equals("list")) {
+                List<String> all = UserListStore.getAll();
+                if (all.isEmpty()) {
+                    reply(ctx, "Список пуст.");
+                } else {
+                    reply(ctx, "Список (" + all.size() + "): " + String.join(", ", all));
+                }
+                return;
+            }
+        }
+
+        // Default: random pick
+        List<String> users = UserListStore.getAll();
+        if (users.isEmpty()) {
+            reply(ctx, "Список пуст. Добавь кого-нибудь: `C.C_pickuser add <имя>`");
+            return;
+        }
+        String picked = users.get(ThreadLocalRandom.current().nextInt(users.size()));
+        reply(ctx, "🎲 " + picked);
+    }
+
+    private void reply(CommandContext ctx, String text) {
+        if (ctx.isSlash()) {
+            ctx.getSlashEvent().reply(text).queue();
+        } else {
+            ctx.getChannel().sendMessage(text).queue();
+        }
     }
 
     @Override
@@ -69,11 +85,15 @@ public class PickUserCommand implements ICommand {
 
     @Override
     public String getDescription() {
-        return "Pick a random user active in this channel in the last 24h";
+        return "Pick a random user from the list";
     }
 
     @Override
     public String getHelp() {
-        return "Usage: C.C_pickuser — выбирает случайного юзера, писавшего в этот канал за 24ч";
+        return "Usage:\n" +
+                "`C.C_pickuser` — случайный юзер из списка\n" +
+                "`C.C_pickuser add <имя>` — добавить юзера\n" +
+                "`C.C_pickuser remove <имя>` — удалить юзера\n" +
+                "`C.C_pickuser list` — показать весь список";
     }
 }

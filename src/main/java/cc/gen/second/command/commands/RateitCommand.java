@@ -41,7 +41,7 @@ public class RateitCommand implements ICommand {
 
         String message;
         if (subject != null && !subject.isBlank()) {
-            message = "Я бы оценила " + subject + " как " + comment;
+            message = "I would rate " + subject + " as " + comment;
         } else {
             message = comment;
         }

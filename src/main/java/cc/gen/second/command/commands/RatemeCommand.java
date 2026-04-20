@@ -50,7 +50,7 @@ public class RatemeCommand implements ICommand {
             message = comment;
         } else {
             String displayName = target.getEffectiveName();
-            message = "Я бы оценила " + displayName + " как " + comment;
+            message = "I would rate " + displayName + " as " + comment;
         }
 
         sendReply(ctx, message);

@@ -15,7 +15,7 @@ public class ProbTgCommand implements ITelegramCommand {
     public void handle(TelegramBot bot, Message message, List<String> args) {
         if (args.isEmpty()) {
             bot.sendText(message.getChatId(),
-                    "Использование: /prob [текст]\nНапример: /prob завтра будет солнце");
+                    "Usage: /prob [text]\nExample: /prob tomorrow it will be sunny");
             return;
         }
 
@@ -30,8 +30,8 @@ public class ProbTgCommand implements ITelegramCommand {
                 ? comments.get(rng.nextInt(comments.size()))
                 : "";
 
-        String reply = "Я считаю, что вероятность того, что " + subject
-                + " — " + percent + "% " + comment;
+        String reply = "I believe the probability of " + subject
+                + " is " + percent + "% " + comment;
 
         bot.sendText(message.getChatId(), reply);
     }
@@ -43,6 +43,6 @@ public class ProbTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Предсказать вероятность события";
+        return "Predict the probability of an event";
     }
 }

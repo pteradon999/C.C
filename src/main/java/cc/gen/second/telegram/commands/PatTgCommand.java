@@ -14,8 +14,8 @@ public class PatTgCommand implements ITelegramCommand {
         String userName = message.getFrom().getFirstName();
         int count = CounterStore.increment("pats");
         bot.sendText(message.getChatId(),
-                "🥰 Спасибо вам, семпай " + userName + "!\n"
-                        + "Семпаи погладили С.С. *" + count + "* раз(a).");
+                "🥰 Thank you, senpai " + userName + "!\n"
+                        + "Senpai has patted C.C. *" + count + "* time(s).");
     }
 
     @Override
@@ -25,6 +25,6 @@ public class PatTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Погладить С.С.";
+        return "Pat C.C.";
     }
 }

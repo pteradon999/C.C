@@ -26,6 +26,6 @@ public class PingTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Проверить, жива ли С.С.";
+        return "Check if C.C. is alive";
     }
 }

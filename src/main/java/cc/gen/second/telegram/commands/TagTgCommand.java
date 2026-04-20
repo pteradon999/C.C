@@ -15,29 +15,29 @@ public class TagTgCommand implements ITelegramCommand {
 
         if (args.isEmpty()) {
             bot.sendText(chatId,
-                    "Использование:\n"
-                            + "`/tag create <имя> <содержимое>` — создать тег\n"
-                            + "`/tag <имя>` — получить тег");
+                    "Usage:\n"
+                            + "`/tag create <name> <content>` — create a tag\n"
+                            + "`/tag <name>` — retrieve a tag");
             return;
         }
 
         if (args.get(0).equalsIgnoreCase("create")) {
             if (args.size() < 3) {
-                bot.sendText(chatId, "❌ Использование: `/tag create <имя> <содержимое>`");
+                bot.sendText(chatId, "❌ Usage: `/tag create <name> <content>`");
                 return;
             }
             String tagName = args.get(1);
             String tagText = String.join(" ", args.subList(2, args.size()));
             String author = message.getFrom().getFirstName();
             TagStore.create(author, tagName, tagText);
-            bot.sendText(chatId, "✅ Тег создан!");
+            bot.sendText(chatId, "✅ Tag created!");
         } else {
             String tagName = args.get(0);
             String content = TagStore.read(tagName);
             if (content != null) {
                 bot.sendText(chatId, content);
             } else {
-                bot.sendText(chatId, "❌ Тег не найден: " + tagName);
+                bot.sendText(chatId, "❌ Tag not found: " + tagName);
             }
         }
     }
@@ -49,6 +49,6 @@ public class TagTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Создать или получить тег";
+        return "Create or retrieve a tag";
     }
 }

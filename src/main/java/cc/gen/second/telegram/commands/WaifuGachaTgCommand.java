@@ -78,14 +78,14 @@ public class WaifuGachaTgCommand implements ITelegramCommand {
 
         if (input == null) {
             bot.sendText(chatId,
-                    "Использование: `/waifugacha [tier-range][count][F/M/All]`\n"
-                            + "Пример: `/waifugacha [3-7][5][F]`\n"
-                            + "Или: `/waifugacha 3-7 5 F`");
+                    "Usage: `/waifugacha [tier-range][count][F/M/All]`\n"
+                            + "Example: `/waifugacha [3-7][5][F]`\n"
+                            + "Or: `/waifugacha 3-7 5 F`");
             return;
         }
 
         if (WAIFU_CACHE.isEmpty()) {
-            bot.sendText(chatId, "❌ Ошибка загрузки `characters.json`");
+            bot.sendText(chatId, "❌ Failed to load `characters.json`");
             return;
         }
 
@@ -96,7 +96,7 @@ public class WaifuGachaTgCommand implements ITelegramCommand {
         if (!badgeFilter.equals("ALL")) pool.removeIf(w -> !w.badges.contains(badgeFilter));
 
         if (pool.isEmpty()) {
-            bot.sendText(chatId, "❌ Нет вайфу в тирах " + input.minTier + "-" + input.maxTier + " с фильтром " + input.badge);
+            bot.sendText(chatId, "❌ No waifus in tiers " + input.minTier + "-" + input.maxTier + " with filter " + input.badge);
             return;
         }
 
@@ -133,7 +133,7 @@ public class WaifuGachaTgCommand implements ITelegramCommand {
     }
 
     @Override public String getName() { return "waifugacha"; }
-    @Override public String getDescription() { return "Waifu гача с фильтрами тиров и пола"; }
+    @Override public String getDescription() { return "Waifu gacha with tier and gender filters"; }
 
     // --- Parsing ---
 

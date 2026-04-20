@@ -42,6 +42,6 @@ public class RatemeTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Оценить тебя от 0 до 10 (результат стабилен в течение дня)";
+        return "Rate you from 0 to 10 (result is stable throughout the day)";
     }
 }

@@ -94,10 +94,10 @@ public class CgachaTgCommand implements ITelegramCommand {
 
         if (input == null) {
             bot.sendText(chatId,
-                    "Использование: `/cgacha [Category][Count]`\n"
-                            + "С фильтром: `/cgacha [Category][min-max][Count]`\n"
-                            + "Или: `/cgacha ability 5-7 3`\n"
-                            + "Категории: All, Ability, Familiar, Item, Skill, Trait");
+                    "Usage: `/cgacha [Category][Count]`\n"
+                            + "With filter: `/cgacha [Category][min-max][Count]`\n"
+                            + "Or: `/cgacha ability 5-7 3`\n"
+                            + "Categories: All, Ability, Familiar, Item, Skill, Trait");
             return;
         }
 
@@ -113,9 +113,9 @@ public class CgachaTgCommand implements ITelegramCommand {
 
         StringBuilder sb = new StringBuilder();
         sb.append("*C.C Tier Gacha*\n")
-                .append("Категория: `").append(input.category.name().toLowerCase()).append("` • Бросков: `")
+                .append("Category: `").append(input.category.name().toLowerCase()).append("` • Rolls: `")
                 .append(input.count).append("`");
-        if (input.range != null) sb.append(" • Диапазон: `").append(input.range).append("`");
+        if (input.range != null) sb.append(" • Range: `").append(input.range).append("`");
         sb.append("\n────────────────────────\n");
 
         for (int i = 1; i <= input.count; i++) {
@@ -124,7 +124,7 @@ public class CgachaTgCommand implements ITelegramCommand {
 
             if (pool.isEmpty()) {
                 sb.append("*Roll ").append(i).append("* — `").append(actual.name().toLowerCase())
-                        .append("` — ⚠️ Нет записей в диапазоне\n");
+                        .append("` — ⚠️ No entries in range\n");
                 continue;
             }
 
@@ -183,7 +183,7 @@ public class CgachaTgCommand implements ITelegramCommand {
     }
 
     @Override public String getName() { return "cgacha"; }
-    @Override public String getDescription() { return "C.C Tier Gacha с d20"; }
+    @Override public String getDescription() { return "C.C Tier Gacha with d20"; }
 
     // --- Parsing ---
 

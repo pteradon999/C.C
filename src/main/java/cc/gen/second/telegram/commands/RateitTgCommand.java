@@ -26,7 +26,7 @@ public class RateitTgCommand implements ITelegramCommand {
 
         String reply;
         if (subject != null && !subject.isBlank()) {
-            reply = "Я бы оценила " + subject + " как " + comment;
+            reply = "I would rate " + subject + " as " + comment;
         } else {
             reply = comment;
         }
@@ -41,6 +41,6 @@ public class RateitTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Оценить что-угодно от 0 до 10";
+        return "Rate anything from 0 to 10";
     }
 }

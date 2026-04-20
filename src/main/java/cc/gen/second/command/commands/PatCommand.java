@@ -10,8 +10,8 @@ public class PatCommand implements ICommand {
     public void handle(CommandContext ctx) {
         int count = CounterStore.increment("pats");
         String message = String.format(
-                "🥰 Спасибо вам, семпай %s!\n" +
-                        "Семпаи погладили С.С. **%d** раз(a).\n" +
+                "🥰 Thank you, senpai %s!\n" +
+                        "Senpai has patted C.C. **%d** time(s).\n" +
                         "http://pa1.narvii.com/5807/1e8d5eea1a2c2a4ac8ce35e8ddb06730810e70b4_hq.gif",
                 ctx.getAuthor().getAsMention(), count
         );

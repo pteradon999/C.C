@@ -13,8 +13,8 @@ public class SlapTgCommand implements ITelegramCommand {
     public void handle(TelegramBot bot, Message message, List<String> args) {
         int count = CounterStore.increment("slaps");
         bot.sendText(message.getChatId(),
-                "💥 П-простите меня, я постараюсь быть лучше...\n"
-                        + "Семпаи были недовольны С.С. *" + count + "* раз/a.");
+                "💥 F-forgive me, I'll try to do better...\n"
+                        + "Senpai has been displeased with C.C. *" + count + "* time(s).");
     }
 
     @Override
@@ -24,6 +24,6 @@ public class SlapTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Шлёпнуть С.С.";
+        return "Slap C.C.";
     }
 }

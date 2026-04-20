@@ -13,7 +13,7 @@ public class FormatTagsTgCommand implements ITelegramCommand {
     public void handle(TelegramBot bot, Message message, List<String> args) {
         if (args.isEmpty()) {
             bot.sendText(message.getChatId(),
-                    "Использование: `/formattags <данные>`\nФормат входных данных — строки вида `tagname count`");
+                    "Usage: `/formattags <data>`\nInput format — lines of the form `tagname count`");
             return;
         }
 
@@ -36,7 +36,7 @@ public class FormatTagsTgCommand implements ITelegramCommand {
         }
 
         if (tags.isEmpty()) {
-            bot.sendText(message.getChatId(), "❌ Не найдено валидных тегов.");
+            bot.sendText(message.getChatId(), "❌ No valid tags found.");
         } else {
             String result = String.join(", ", tags);
             bot.sendText(message.getChatId(), "✅ Tags:\n```\n" + result + "\n```");
@@ -55,6 +55,6 @@ public class FormatTagsTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Форматировать теги из списка с количеством";
+        return "Format tags from a list with counts";
     }
 }

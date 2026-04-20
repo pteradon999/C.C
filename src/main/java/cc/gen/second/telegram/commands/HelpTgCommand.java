@@ -34,6 +34,6 @@ public class HelpTgCommand implements ITelegramCommand {
 
     @Override
     public String getDescription() {
-        return "Список команд";
+        return "List of commands";
     }
 }

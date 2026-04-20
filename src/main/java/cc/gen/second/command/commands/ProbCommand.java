@@ -22,7 +22,7 @@ public class ProbCommand implements ICommand {
         }
 
         if (subject == null || subject.isBlank()) {
-            String usage = "Использование: C.C_prob [текст]\nНапример: C.C_prob завтра будет солнце";
+            String usage = "Usage: C.C_prob [text]\nExample: C.C_prob tomorrow it will be sunny";
             if (ctx.isSlash()) {
                 ctx.getSlashEvent().reply(usage).queue();
             } else {
@@ -40,8 +40,8 @@ public class ProbCommand implements ICommand {
                 ? comments.get(rng.nextInt(comments.size()))
                 : "";
 
-        String message = "Я считаю, что вероятность того, что " + subject
-                + " — " + percent + "% " + comment;
+        String message = "I believe the probability of " + subject
+                + " is " + percent + "% " + comment;
 
         if (ctx.isSlash()) {
             ctx.getSlashEvent().reply(message).queue();

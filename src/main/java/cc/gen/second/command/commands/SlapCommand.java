@@ -10,8 +10,8 @@ public class SlapCommand implements ICommand {
     public void handle(CommandContext ctx) {
         int count = CounterStore.increment("slaps");
         String message = String.format(
-                "💥 П-простите меня, я постараюсь быть лучше...\n" +
-                        "Семпаи были недовольны С.С. **%d** раз/a.",
+                "💥 F-forgive me, I'll try to do better...\n" +
+                        "Senpai has been displeased with C.C. **%d** time(s).",
                 count
         );
         if (ctx.isSlash()) {
